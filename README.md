@@ -10,22 +10,31 @@ Lexicase selection is a parent selection method used in evolutionary computation
 - **Epsilon Lexicase**: Allows individuals within epsilon of the best to be considered equally good
 - **Downsampled Lexicase**: Uses random subsets of test cases to increase diversity
 
-## TODOs:
-
-- [ ] Add some demo notebooks
-- [ ] Add informed down-sampling
-- [ ] Add MAD calculation for automatic epsilon selection
-
 ## 📦 Installation
 
-### NumPy Backend
+### PyPI
 ```bash
-pip install .[numpy]
+pip install lexicase
 ```
 
-### JAX Backend  
+To use the numpy backend, you can use the following command:
+
 ```bash
-pip install .[jax]
+pip install lexicase[numpy]
+```
+
+To use the JAX backend, you need to install JAX and JAXlib and then use the following command:
+
+```bash
+pip install lexicase[jax]
+```
+
+## Source Installation
+
+To install from source, clone the repository and then run the following command:
+
+```bash
+pip install -e .
 ```
 
 ### Development Installation
@@ -167,6 +176,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## TODOs:
+
+- [ ] Add informed down-sampling
+- [ ] Add MAD calculation for automatic epsilon selection
+- [ ] Add some demo notebooks
 
 ## 🔗 References
 
