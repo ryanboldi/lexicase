@@ -6,11 +6,30 @@ import pytest
 import numpy as np
 from lexicase import epsilon_lexicase_selection, lexicase_selection, set_backend
 
+# Check if JAX is available
+try:
+    import jax
+    JAX_AVAILABLE = True
+except ImportError:
+    JAX_AVAILABLE = False
+
+# Set up backend parameters based on availability
+BACKENDS = ['numpy']
+if JAX_AVAILABLE:
+    BACKENDS.append('jax')
+
+
+def _to_set(arr):
+    """Convert array to set, handling both NumPy and JAX arrays."""
+    if hasattr(arr, 'tolist'):
+        return set(arr.tolist())
+    return set(arr)
+
 
 class TestEpsilonLexicase:
     """Test cases for epsilon lexicase selection."""
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_epsilon_bounds(self, backend):
         """Test that epsilon creates appropriate bounds for selection."""
         set_backend(backend)
@@ -32,11 +51,11 @@ class TestEpsilonLexicase:
         )
         
         # Large epsilon should result in more diverse selection
-        diversity_small = len(set(selected_small))
-        diversity_large = len(set(selected_large))
+        diversity_small = len(_to_set(selected_small))
+        diversity_large = len(_to_set(selected_large))
         assert diversity_large >= diversity_small
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_equivalence_to_base_with_zero_epsilon(self, backend):
         """Test that epsilon=0 is equivalent to base lexicase."""
         set_backend(backend)
@@ -55,7 +74,7 @@ class TestEpsilonLexicase:
         # Should produce identical results
         assert np.array_equal(base_selected, epsilon_selected)
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_epsilon_correctness(self, backend):
         """Test correctness of epsilon lexicase logic."""
         set_backend(backend)
@@ -73,12 +92,12 @@ class TestEpsilonLexicase:
         )
         
         # Both individuals 0 and 1 should be selected (order depends on case shuffling)
-        unique_selected = set(selected)
+        unique_selected = _to_set(selected)
         # At least one of the good individuals should be selected
         assert len(unique_selected.intersection({0, 1})) > 0
         assert 2 not in unique_selected
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_negative_epsilon_error(self, backend):
         """Test that negative epsilon raises error."""
         set_backend(backend)
@@ -88,7 +107,7 @@ class TestEpsilonLexicase:
         with pytest.raises(ValueError, match="Epsilon must be non-negative"):
             epsilon_lexicase_selection(fitness_matrix, num_selected=1, epsilon=-0.1)
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_large_epsilon_selects_all(self, backend):
         """Test that very large epsilon allows all individuals to be competitive."""
         set_backend(backend)
@@ -104,12 +123,12 @@ class TestEpsilonLexicase:
             fitness_matrix, num_selected=100, epsilon=1000.0, seed=42
         )
         
-        unique_selected = set(selected)
+        unique_selected = _to_set(selected)
         assert len(unique_selected) == 3  # All individuals should be selected
 
     # STRESS TESTS - Rigorous epsilon lexicase validation
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_epsilon_scaling_stress(self, backend):
         """Stress test how epsilon affects selection with large populations."""
         set_backend(backend)
@@ -129,7 +148,7 @@ class TestEpsilonLexicase:
             selected = epsilon_lexicase_selection(
                 fitness_matrix, num_selected=200, epsilon=epsilon, seed=42
             )
-            unique_count = len(set(selected))
+            unique_count = len(_to_set(selected))
             diversity_scores.append(unique_count)
         
         # Diversity should generally increase with epsilon
@@ -146,7 +165,7 @@ class TestEpsilonLexicase:
         assert large_epsilon_diversity >= zero_epsilon_diversity, \
             "Large epsilon should not be more restrictive than zero epsilon"
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_epsilon_threshold_behavior(self, backend):
         """Test precise epsilon threshold behavior."""
         set_backend(backend)
@@ -183,7 +202,7 @@ class TestEpsilonLexicase:
         assert selection_counts_small[0] >= selection_counts[0], \
             "Individual 0 should be selected at least as much with smaller epsilon"
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_epsilon_with_many_close_performers(self, backend):
         """Test epsilon lexicase with many individuals having similar performance."""
         set_backend(backend)
@@ -206,8 +225,8 @@ class TestEpsilonLexicase:
             fitness_matrix, num_selected=100, epsilon=5.0, seed=42
         )
         
-        small_diversity = len(set(small_epsilon_selected))
-        large_diversity = len(set(large_epsilon_selected))
+        small_diversity = len(_to_set(small_epsilon_selected))
+        large_diversity = len(_to_set(large_epsilon_selected))
         
         # With close performers, epsilon can have complex effects on diversity
         # Small epsilon might allow more individuals to compete, while very large epsilon
@@ -228,7 +247,7 @@ class TestEpsilonLexicase:
         assert top_3_small > 0, "Top individuals should be selected with small epsilon"
         assert top_3_large > 0, "Top individuals should be selected with large epsilon"
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_epsilon_extreme_fitness_ranges(self, backend):
         """Test epsilon lexicase with extreme fitness value ranges."""
         set_backend(backend)
@@ -258,11 +277,11 @@ class TestEpsilonLexicase:
         assert all(0 <= ind < 4 for ind in selected_large)
         
         # Large epsilon should include more individuals
-        diversity_small = len(set(selected_small))
-        diversity_large = len(set(selected_large))
+        diversity_small = len(_to_set(selected_small))
+        diversity_large = len(_to_set(selected_large))
         assert diversity_large >= diversity_small
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_epsilon_consistency_across_runs(self, backend):
         """Test that epsilon lexicase maintains consistent behavior across multiple runs."""
         set_backend(backend)
@@ -311,7 +330,7 @@ class TestEpsilonLexicase:
             f"No individual should dominate: max share = {max_share:.2%}"
 
 
-@pytest.fixture(params=['numpy'])
+@pytest.fixture(params=BACKENDS)
 def backend(request):
     """Test with different backends."""
     set_backend(request.param)
@@ -393,7 +412,7 @@ def test_epsilon_vs_regular_behavior(backend):
     assert all(0 <= idx < 5 for idx in selected)
     
     # Should have reasonable diversity
-    unique_selections = set(selected)
+    unique_selections = _to_set(selected)
     assert len(unique_selections) >= 3
 
 
@@ -447,7 +466,7 @@ def test_epsilon_with_ties(backend):
     assert all(0 <= idx < 4 for idx in selected)
     
     # Should distribute selections among all individuals
-    unique_selections = set(selected)
+    unique_selections = _to_set(selected)
     assert len(unique_selections) >= 2  # Some distribution
 
 
@@ -506,7 +525,9 @@ def test_epsilon_case_order_independence(backend):
     results = []
     for seed in range(10):
         selected = epsilon_lexicase_selection(fitnesses, num_selected=1, epsilon=0.5, seed=seed)
-        results.append(selected[0])
+        # Convert JAX scalar to Python int for hashing
+        result_val = int(selected[0]) if hasattr(selected[0], 'item') else selected[0]
+        results.append(result_val)
     
     # Should see some variety due to case order differences
     unique_results = set(results)
@@ -549,5 +570,5 @@ def test_epsilon_stress_test(backend):
     assert all(0 <= idx < n_individuals for idx in selected)
     
     # Should see reasonable diversity
-    unique_selections = set(selected)
+    unique_selections = _to_set(selected)
     assert len(unique_selections) >= 5 

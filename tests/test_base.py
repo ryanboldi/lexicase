@@ -6,8 +6,27 @@ import numpy as np
 import pytest
 from lexicase import lexicase_selection, epsilon_lexicase_selection, set_backend
 
+# Check if JAX is available
+try:
+    import jax
+    JAX_AVAILABLE = True
+except ImportError:
+    JAX_AVAILABLE = False
 
-@pytest.fixture(params=['numpy'])
+# Set up backend parameters based on availability
+BACKENDS = ['numpy']
+if JAX_AVAILABLE:
+    BACKENDS.append('jax')
+
+
+def _to_set(arr):
+    """Convert array to set, handling both NumPy and JAX arrays."""
+    if hasattr(arr, 'tolist'):
+        return set(arr.tolist())
+    return set(arr)
+
+
+@pytest.fixture(params=BACKENDS)
 def backend(request):
     """Test with different backends."""
     set_backend(request.param)
@@ -179,7 +198,7 @@ def test_specialist_selection(backend):
     assert all(0 <= idx < 4 for idx in selected)
     
     # Should select multiple different individuals
-    unique_selections = set(selected)
+    unique_selections = _to_set(selected)
     assert len(unique_selections) >= 2  # Some diversity
 
 
@@ -195,10 +214,12 @@ def test_case_order_matters(backend):
     results = []
     for seed in range(10):
         selected = lexicase_selection(fitnesses, num_selected=1, seed=seed)
-        results.append(selected[0])
+        # Convert JAX scalar to Python int for hashing
+        result_val = int(selected[0]) if hasattr(selected[0], 'item') else selected[0]
+        results.append(result_val)
     
     # Should see some variation in results
-    unique_results = set(results)
+    unique_results = set(results)  # results is a list of individual indices, not arrays
     assert len(unique_results) >= 2  # At least some variation
 
 
@@ -249,8 +270,8 @@ def test_epsilon_vs_regular_comparison(backend):
     assert len(selected_epsilon_large) == 20
     
     # Large epsilon should allow more diversity
-    diversity_regular = len(set(selected_regular))
-    diversity_large_eps = len(set(selected_epsilon_large))
+    diversity_regular = len(_to_set(selected_regular))
+    diversity_large_eps = len(_to_set(selected_epsilon_large))
     
     # This is a soft check since stochasticity can affect results
     assert diversity_large_eps >= diversity_regular * 0.5  # At least half the diversity
@@ -272,7 +293,7 @@ def test_epsilon_behavior(backend):
     assert all(0 <= idx < 4 for idx in selected)
     
     # Should see some diversity in selection
-    unique_selected = set(selected)
+    unique_selected = _to_set(selected)
     assert len(unique_selected) >= 2
 
 

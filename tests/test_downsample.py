@@ -6,11 +6,30 @@ import pytest
 import numpy as np
 from lexicase import downsample_lexicase_selection, lexicase_selection, set_backend
 
+# Check if JAX is available
+try:
+    import jax
+    JAX_AVAILABLE = True
+except ImportError:
+    JAX_AVAILABLE = False
+
+# Set up backend parameters based on availability
+BACKENDS = ['numpy']
+if JAX_AVAILABLE:
+    BACKENDS.append('jax')
+
+
+def _to_set(arr):
+    """Convert array to set, handling both NumPy and JAX arrays."""
+    if hasattr(arr, 'tolist'):
+        return set(arr.tolist())
+    return set(arr)
+
 
 class TestDownsampleLexicase:
     """Test cases for downsampled lexicase selection."""
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_verifies_case_count(self, backend):
         """Test that downsampling uses correct number of cases."""
         set_backend(backend)
@@ -34,7 +53,7 @@ class TestDownsampleLexicase:
         # (though this isn't guaranteed, it's very likely with random data)
         assert not np.array_equal(selected_small, selected_large)
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_higher_selection_diversity(self, backend):
         """Test that downsampling increases selection diversity."""
         set_backend(backend)
@@ -50,18 +69,18 @@ class TestDownsampleLexicase:
         
         # Full lexicase should favor individual 0
         full_selected = lexicase_selection(fitness_matrix, num_selected=100, seed=42)
-        full_diversity = len(set(full_selected))
+        full_diversity = len(_to_set(full_selected))
         
         # Downsampled lexicase should potentially increase diversity
         down_selected = downsample_lexicase_selection(
             fitness_matrix, num_selected=100, downsample_size=3, seed=42
         )
-        down_diversity = len(set(down_selected))
+        down_diversity = len(_to_set(down_selected))
         
         # Downsampling should generally increase or maintain diversity
         assert down_diversity >= full_diversity * 0.8  # Allow some tolerance
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_downsample_larger_than_cases(self, backend):
         """Test behavior when downsample size is larger than available cases."""
         set_backend(backend)
@@ -77,7 +96,7 @@ class TestDownsampleLexicase:
         )
         assert len(selected) == 10
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_deterministic_with_seed(self, backend):
         """Test that downsampled lexicase is deterministic with seed."""
         set_backend(backend)
@@ -93,7 +112,7 @@ class TestDownsampleLexicase:
         
         assert np.array_equal(selected1, selected2)
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_zero_downsample_size_error(self, backend):
         """Test that zero downsample size raises error."""
         set_backend(backend)
@@ -105,7 +124,7 @@ class TestDownsampleLexicase:
                 fitness_matrix, num_selected=1, downsample_size=0
             )
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_single_case_downsample(self, backend):
         """Test downsampling to single case."""
         set_backend(backend)
@@ -126,7 +145,7 @@ class TestDownsampleLexicase:
 
     # STRESS TESTS - Based on conference video requirements
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_specialist_selection_with_downsampling(self, backend):
         """Test that downsampling can reveal specialist individuals."""
         set_backend(backend)
@@ -147,14 +166,14 @@ class TestDownsampleLexicase:
         
         # Full lexicase might miss some specialists due to case order
         full_selected = lexicase_selection(fitness_matrix, num_selected=200, seed=42)
-        full_diversity = len(set(full_selected))
+        full_diversity = len(_to_set(full_selected))
         
         # Downsampled lexicase should potentially find more specialists
         # by focusing on smaller case subsets
         down_selected = downsample_lexicase_selection(
             fitness_matrix, num_selected=200, downsample_size=5, seed=42
         )
-        down_diversity = len(set(down_selected))
+        down_diversity = len(_to_set(down_selected))
         
         # Should maintain or improve diversity with specialists
         assert down_diversity >= max(5, full_diversity * 0.8), \
@@ -167,7 +186,7 @@ class TestDownsampleLexicase:
         assert non_zero_specialists >= 8, \
             f"Should select multiple specialists: {non_zero_specialists}/20"
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_case_subset_independence(self, backend):
         """Test that different case subsets lead to different selection patterns."""
         set_backend(backend)
@@ -203,7 +222,7 @@ class TestDownsampleLexicase:
         assert correlation < 0.9, \
             f"Different downsample sizes should produce different patterns: correlation = {correlation:.3f}"
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_downsample_with_insufficient_cases(self, backend):
         """Test behavior when downsampling with too few cases for good discrimination."""
         set_backend(backend)
@@ -226,11 +245,11 @@ class TestDownsampleLexicase:
         assert all(0 <= ind < 5 for ind in selected)
         
         # Should still maintain some diversity even with few cases
-        unique_selected = len(set(selected))
+        unique_selected = len(_to_set(selected))
         assert unique_selected >= 2, \
             f"Should maintain some diversity even with few cases: {unique_selected}"
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_downsample_stochastic_behavior(self, backend):
         """Test stochastic properties of downsampled lexicase over multiple runs."""
         set_backend(backend)
@@ -271,7 +290,7 @@ class TestDownsampleLexicase:
         assert max_share < 0.6, \
             f"No individual should dominate: max share = {max_share:.2%}"
     
-    @pytest.mark.parametrize("backend", ["numpy", "jax"])
+    @pytest.mark.parametrize("backend", BACKENDS)
     def test_downsample_vs_full_lexicase_comparison(self, backend):
         """Compare downsampled lexicase with full lexicase on structured problems."""
         set_backend(backend)

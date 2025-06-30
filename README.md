@@ -165,5 +165,5 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 🔗 References
 
 - Spector, L. (2012). Assessment of problem modality by differential performance of lexicase selection in genetic programming. GECCO.
-- La Cava, W., et al. (2016). Epsilon-lexicase selection for regression. GECCO.
-- Hernandez, J. G., et al. (2019). Random subsampling in lexicase selection. GECCO. 
+- La Cava, W., et al. (2019). Epsilon-lexicase selection for regression. GECCO.
+- Hernandez, J. G., et al. (2019). Random subsampling improves performance in lexicase selection. GECCO. 
