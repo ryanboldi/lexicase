@@ -54,6 +54,7 @@ def downsample_lexicase_selection(fitness_matrix, num_selected, downsample_size,
             )
         else:  # JAX
             import jax
+            rng, _rng = jax.random.split(rng)
             sampled_cases = jax.random.choice(
                 rng, 
                 n_cases, 

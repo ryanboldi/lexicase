@@ -44,7 +44,9 @@ def lexicase_selection(fitness_matrix, num_selected, seed=None):
             case_order = rng.permutation(case_order)
         else:  # JAX
             import jax
-            case_order = jax.random.permutation(rng, case_order)
+            rng, _rng = jax.random.split(rng)
+            case_order = jax.random.permutation(_rng, case_order)
+            
         
         # Start with all individuals as candidates
         candidates = xp.arange(n_individuals)
