@@ -10,6 +10,12 @@ Lexicase selection is a parent selection method used in evolutionary computation
 - **Epsilon Lexicase**: Allows individuals within epsilon of the best to be considered equally good
 - **Downsampled Lexicase**: Uses random subsets of test cases to increase diversity
 
+## TODOs:
+
+- [ ] Add some demo notebooks
+- [ ] Add informed down-sampling
+- [ ] Add MAD calculation for automatic epsilon selection
+
 ## 📦 Installation
 
 ### NumPy Backend
