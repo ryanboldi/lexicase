@@ -1,0 +1,78 @@
+"""
+Epsilon lexicase selection implementation.
+"""
+
+from .backend import get_lib
+from .utils import validate_fitness_matrix, validate_selection_params
+
+
+def epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon, seed=None):
+    """Epsilon lexicase selection algorithm.
+    
+    Args:
+        fitness_matrix: Array of shape (n_individuals, n_cases) containing
+                       fitness values. Higher values indicate better performance.
+        num_selected: Number of individuals to select
+        epsilon: Tolerance value for "equal" performance
+        seed: Random seed for reproducibility
+        
+    Returns:
+        Array of selected individual indices
+        
+    Raises:
+        ValueError: If inputs are invalid
+    """
+    # Validate inputs
+    fitness_matrix = validate_fitness_matrix(fitness_matrix)
+    validate_selection_params(num_selected, seed)
+    
+    if epsilon < 0:
+        raise ValueError("Epsilon must be non-negative")
+    
+    if num_selected == 0:
+        xp, _ = get_lib()
+        return xp.array([], dtype=int)
+
+    xp, rng = get_lib(seed)
+    
+    n_individuals, n_cases = fitness_matrix.shape
+    selected = []
+
+    # Perform selection
+    for _ in range(num_selected):
+        # Shuffle the order of test cases
+        case_order = xp.arange(n_cases)
+        if hasattr(rng, 'permutation'):  # NumPy
+            case_order = rng.permutation(case_order)
+        else:  # JAX
+            import jax
+            case_order = jax.random.permutation(rng, case_order)
+        
+        # Start with all individuals as candidates
+        candidates = xp.arange(n_individuals)
+        
+        # Filter candidates case by case
+        for case_idx in case_order:
+            if len(candidates) <= 1:
+                break
+                
+            case_fitness = fitness_matrix[candidates, case_idx]
+            max_fitness = xp.max(case_fitness)
+            
+            # Keep only individuals within epsilon of the best performance
+            best_mask = case_fitness >= (max_fitness - epsilon)
+            candidates = candidates[best_mask]
+        
+        # Randomly select one from remaining candidates
+        if len(candidates) == 1:
+            selected.append(int(candidates[0]))
+        else:
+            # Multiple candidates remain - select randomly
+            if hasattr(rng, 'choice'):  # NumPy
+                chosen_idx = rng.choice(len(candidates))
+            else:  # JAX
+                import jax
+                chosen_idx = jax.random.choice(rng, len(candidates))
+            selected.append(int(candidates[chosen_idx]))
+
+    return xp.array(selected, dtype=int) 

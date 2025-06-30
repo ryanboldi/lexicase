@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lexicase"
+version = "0.1.0"
+description = "Fast, vectorized lexicase selection in NumPy and JAX"
+readme = "README.md"
+authors = [{name = "Ryan Bahlous-Boldi"}]
+license = {text = "MIT"}
+dependencies = []
+
+[project.optional-dependencies]
+jax = ["jax", "jaxlib"]
+numpy = ["numpy"]
+dev = ["pytest", "pytest-cov"]
+
+[tool.setuptools.packages.find]
+where = ["."] 
