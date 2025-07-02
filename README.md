@@ -7,7 +7,7 @@ A fast, vectorized lexicase selection implementation supporting both NumPy and J
 Lexicase selection is a parent selection method used in evolutionary computation that evaluates individuals on test cases in random order, keeping only those that perform best on each case. This library provides efficient implementations of several lexicase variants:
 
 - **Base Lexicase**: Standard lexicase selection algorithm
-- **Epsilon Lexicase**: Allows individuals within epsilon of the best to be considered equally good
+- **Epsilon Lexicase**: Allows individuals within epsilon of the best to be considered equally good (uses adaptive MAD-based epsilon by default)
 - **Downsampled Lexicase**: Uses random subsets of test cases to increase diversity
 
 ## 📦 Installation
@@ -65,11 +65,10 @@ selected = lexicase.lexicase_selection(
 )
 print(f"Selected individuals: {selected}")
 
-# Use epsilon lexicase for more diversity
+# Use epsilon lexicase with adaptive MAD-based epsilon (recommended)
 selected_eps = lexicase.epsilon_lexicase_selection(
     fitness_matrix, 
     num_selected=5, 
-    epsilon=1.0,
     seed=42
 )
 print(f"Epsilon lexicase selected: {selected_eps}")
@@ -101,6 +100,14 @@ selected = lexicase.lexicase_selection(fitness_matrix, num_selected=10, seed=42)
 
 ### Epsilon Lexicase
 ```python
+# Recommended: Use adaptive MAD-based epsilon (automatic)
+selected = lexicase.epsilon_lexicase_selection(
+    fitness_matrix, 
+    num_selected=10, 
+    seed=42
+)
+
+# Alternative: Manual epsilon specification
 selected = lexicase.epsilon_lexicase_selection(
     fitness_matrix, 
     num_selected=10, 
@@ -145,7 +152,7 @@ pytest tests/ --cov=lexicase --cov-report=html
    - If only one individual remains, select it
 4. If multiple individuals remain after all cases, select randomly
 
-**Epsilon Lexicase:** Considers individuals within `epsilon` of the best performance as equally good.
+**Epsilon Lexicase:** Considers individuals within `epsilon` of the best performance as equally good. By default, uses adaptive epsilon values based on the Median Absolute Deviation (MAD) of fitness values for each test case, providing robust and data-driven tolerance levels.
 
 **Downsampled Lexicase:** Uses only a random subset of test cases, increasing selection diversity.
 
@@ -153,7 +160,7 @@ pytest tests/ --cov=lexicase --cov-report=html
 
 - Use JAX backend for large matrices and GPU acceleration
 - Downsampled variants are faster and often more diverse
-- Set appropriate epsilon values (typically 0.1-1.0 of fitness range)
+- For epsilon lexicase, the adaptive MAD-based epsilon (default) is recommended for most use cases
 - Use seeds for reproducible results
 
 ## 📚 Citation
@@ -179,12 +186,13 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## TODOs:
 
+- [ ] make jax implementaion faster, and jittable.
 - [ ] Add informed down-sampling
-- [ ] Add MAD calculation for automatic epsilon selection
 - [ ] Add some demo notebooks
 
 ## 🔗 References
 
-- Spector, L. (2012). Assessment of problem modality by differential performance of lexicase selection in genetic programming. GECCO.
-- La Cava, W., et al. (2019). Epsilon-lexicase selection for regression. GECCO.
-- Hernandez, J. G., et al. (2019). Random subsampling improves performance in lexicase selection. GECCO. 
+- Spector, L. (2012). Assessment of Problem Modality by Differential Performance of Lexicase Selection in Genetic Programming: A Preliminary Report. In Companion Publication of the 2012 Genetic and Evolutionary Computation Conference, GECCO’12 Companion. ACM Press. pp. 401 - 408.
+- Helmuth, T., L. Spector, and J. Matheson. (2014). Solving Uncompromising Problems with Lexicase Selection. In IEEE Transactions on Evolutionary Computation, vol. 19, no. 5, pp. 630 - 643.
+- La Cava, W., L. Spector, and K. Danai (2016). Epsilon-lexicase selection for regression. GECCO '16: Proceedings of the Genetic and Evolutionary Computation Conference, pp. 741 - 748.
+- Hernandez, J. G., A. Lalejini, E. Dolson, and C. Ofria (2019). Random subsampling improves performance in lexicase selection. GECCO '19: Proceedings of the Genetic and Evolutionary Computation Conference Companion, pp. 2028 - 2031

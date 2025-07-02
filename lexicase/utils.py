@@ -121,4 +121,35 @@ def select_informative_cases(fitness_matrix, downsample_size, rng):
             shape=(min(downsample_size, num_cases),), 
             replace=False, 
             p=probabilities
-        ) 
+        )
+
+
+def compute_mad_epsilon(fitness_matrix):
+    """Compute Median Absolute Deviation (MAD) for each test case.
+    
+    MAD is calculated as the median of absolute deviations from the median
+    for each test case across all individuals.
+    
+    Args:
+        fitness_matrix: Array of shape (n_individuals, n_cases)
+        
+    Returns:
+        Array of MAD values for each test case
+    """
+    xp, _ = get_lib()
+    
+    # Calculate median for each case (column) - more robust than mean
+    case_medians = xp.median(fitness_matrix, axis=0)
+    
+    # Calculate absolute deviations from median for each case
+    abs_deviations = xp.abs(fitness_matrix - case_medians[None, :])
+    
+    # Calculate median of absolute deviations for each case
+    mad_values = xp.median(abs_deviations, axis=0)
+    
+    # Handle case where MAD is 0 (all values identical) by using a small default
+    min_epsilon = 1e-10
+    mad_values = xp.maximum(mad_values, min_epsilon)
+    
+    return mad_values
+
