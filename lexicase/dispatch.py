@@ -88,7 +88,7 @@ def _validate_selection_params(num_selected, seed=None):
         raise ValueError("Seed must be an integer")
 
 
-def lexicase_selection(fitness_matrix, num_selected, seed=None):
+def lexicase_selection(fitness_matrix, num_selected, seed=None, elitism=0):
     """
     Lexicase selection with automatic dispatch based on array type.
     
@@ -101,6 +101,9 @@ def lexicase_selection(fitness_matrix, num_selected, seed=None):
                        Can be NumPy array or JAX array.
         num_selected: Number of individuals to select
         seed: Random seed for reproducibility
+        elitism: Number of best individuals to always include (by total fitness).
+                 The remaining (num_selected - elitism) slots are filled via
+                 standard lexicase selection. Default is 0 (no elitism).
         
     Returns:
         Array of selected individual indices (same type as input)
@@ -112,6 +115,14 @@ def lexicase_selection(fitness_matrix, num_selected, seed=None):
     fitness_matrix, is_jax = _validate_and_convert_fitness_matrix(fitness_matrix)
     _validate_selection_params(num_selected, seed)
     
+    # Validate elitism parameter
+    if elitism < 0:
+        raise ValueError("Elitism must be non-negative")
+    if elitism > num_selected:
+        raise ValueError("Elitism cannot exceed num_selected")
+    if elitism > fitness_matrix.shape[0]:
+        raise ValueError("Elitism cannot exceed number of individuals")
+    
     if is_jax and JAX_AVAILABLE:
         # Use JAX implementation
         # Handle zero case outside JIT for better performance
@@ -120,15 +131,15 @@ def lexicase_selection(fitness_matrix, num_selected, seed=None):
         
         from .jax_impl_simple import jax_lexicase_selection_impl
         key = jax.random.PRNGKey(seed or 0)
-        return jax_lexicase_selection_impl(fitness_matrix, num_selected, key)
+        return jax_lexicase_selection_impl(fitness_matrix, num_selected, key, elitism)
     else:
         # Use NumPy implementation  
         from .numpy_impl import numpy_lexicase_selection
         rng = np.random.default_rng(seed)
-        return numpy_lexicase_selection(fitness_matrix, num_selected, rng)
+        return numpy_lexicase_selection(fitness_matrix, num_selected, rng, elitism)
 
 
-def epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon=None, seed=None):
+def epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon=None, seed=None, elitism=0):
     """
     Epsilon lexicase selection with automatic dispatch based on array type.
     
@@ -141,6 +152,9 @@ def epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon=None, seed=
                 Can be a scalar (same epsilon for all cases) or array-like
                 (different epsilon per case).
         seed: Random seed for reproducibility
+        elitism: Number of best individuals to always include (by total fitness).
+                 The remaining (num_selected - elitism) slots are filled via
+                 standard epsilon lexicase selection. Default is 0 (no elitism).
         
     Returns:
         Array of selected individual indices (same type as input)
@@ -152,13 +166,21 @@ def epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon=None, seed=
     fitness_matrix, is_jax = _validate_and_convert_fitness_matrix(fitness_matrix)
     _validate_selection_params(num_selected, seed)
     
+    # Validate elitism parameter
+    if elitism < 0:
+        raise ValueError("Elitism must be non-negative")
+    if elitism > num_selected:
+        raise ValueError("Elitism cannot exceed num_selected")
+    if elitism > fitness_matrix.shape[0]:
+        raise ValueError("Elitism cannot exceed number of individuals")
+    
     if is_jax and JAX_AVAILABLE:
         # Use JAX implementation
         if epsilon is None:
             # Use MAD-based epsilon
             from .jax_impl_simple import jax_epsilon_lexicase_selection_with_mad
             key = jax.random.PRNGKey(seed or 0)
-            return jax_epsilon_lexicase_selection_with_mad(fitness_matrix, num_selected, key)
+            return jax_epsilon_lexicase_selection_with_mad(fitness_matrix, num_selected, key, elitism)
         else:
             # Use provided epsilon
             from .jax_impl_simple import jax_epsilon_lexicase_selection_impl
@@ -174,14 +196,14 @@ def epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon=None, seed=
                     raise ValueError("All epsilon values must be non-negative")
             
             key = jax.random.PRNGKey(seed or 0)
-            return jax_epsilon_lexicase_selection_impl(fitness_matrix, num_selected, epsilon_jax, key)
+            return jax_epsilon_lexicase_selection_impl(fitness_matrix, num_selected, epsilon_jax, key, elitism)
     else:
         # Use NumPy implementation
         if epsilon is None:
             # Use MAD-based epsilon
             from .numpy_impl import numpy_epsilon_lexicase_selection_with_mad
             rng = np.random.default_rng(seed)
-            return numpy_epsilon_lexicase_selection_with_mad(fitness_matrix, num_selected, rng)
+            return numpy_epsilon_lexicase_selection_with_mad(fitness_matrix, num_selected, rng, elitism)
         else:
             # Use provided epsilon
             from .numpy_impl import numpy_epsilon_lexicase_selection
@@ -197,10 +219,10 @@ def epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon=None, seed=
                     raise ValueError("All epsilon values must be non-negative")
             
             rng = np.random.default_rng(seed)
-            return numpy_epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon_np, rng)
+            return numpy_epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon_np, rng, elitism)
 
 
-def downsample_lexicase_selection(fitness_matrix, num_selected, downsample_size, seed=None):
+def downsample_lexicase_selection(fitness_matrix, num_selected, downsample_size, seed=None, elitism=0):
     """
     Downsampled lexicase selection with automatic dispatch based on array type.
     
@@ -210,6 +232,9 @@ def downsample_lexicase_selection(fitness_matrix, num_selected, downsample_size,
         num_selected: Number of individuals to select
         downsample_size: Number of test cases to randomly sample for each selection
         seed: Random seed for reproducibility
+        elitism: Number of best individuals to always include (by total fitness).
+                 The remaining (num_selected - elitism) slots are filled via
+                 standard downsampled lexicase selection. Default is 0 (no elitism).
         
     Returns:
         Array of selected individual indices (same type as input)
@@ -224,15 +249,23 @@ def downsample_lexicase_selection(fitness_matrix, num_selected, downsample_size,
     if downsample_size <= 0:
         raise ValueError("Downsample size must be positive")
     
+    # Validate elitism parameter
+    if elitism < 0:
+        raise ValueError("Elitism must be non-negative")
+    if elitism > num_selected:
+        raise ValueError("Elitism cannot exceed num_selected")
+    if elitism > fitness_matrix.shape[0]:
+        raise ValueError("Elitism cannot exceed number of individuals")
+    
     if is_jax and JAX_AVAILABLE:
         # Use JAX implementation
         from .jax_impl_simple import jax_downsample_lexicase_selection_impl
         key = jax.random.PRNGKey(seed or 0)
-        return jax_downsample_lexicase_selection_impl(fitness_matrix, num_selected, downsample_size, key)
+        return jax_downsample_lexicase_selection_impl(fitness_matrix, num_selected, downsample_size, key, elitism)
     else:
         # Use NumPy implementation
         from .numpy_impl import numpy_downsample_lexicase_selection
         rng = np.random.default_rng(seed)
-        return numpy_downsample_lexicase_selection(fitness_matrix, num_selected, downsample_size, rng)
+        return numpy_downsample_lexicase_selection(fitness_matrix, num_selected, downsample_size, rng, elitism)
 
 

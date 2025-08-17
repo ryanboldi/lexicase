@@ -8,7 +8,7 @@ for users who don't need GPU acceleration.
 import numpy as np
 
 
-def numpy_lexicase_selection(fitness_matrix, num_selected, rng):
+def numpy_lexicase_selection(fitness_matrix, num_selected, rng, elitism=0):
     """
     NumPy-based lexicase selection implementation.
     
@@ -17,6 +17,7 @@ def numpy_lexicase_selection(fitness_matrix, num_selected, rng):
                        Higher values indicate better performance.
         num_selected: Number of individuals to select (int)
         rng: NumPy random number generator (from np.random.default_rng())
+        elitism: Number of best individuals to always include (by total fitness)
         
     Returns:
         NumPy array of selected individual indices
@@ -27,8 +28,17 @@ def numpy_lexicase_selection(fitness_matrix, num_selected, rng):
     n_individuals, n_cases = fitness_matrix.shape
     selected = []
     
-    # Perform selection
-    for _ in range(num_selected):
+    # Handle elitism: select best individuals by total fitness
+    if elitism > 0:
+        # Calculate total fitness for each individual
+        total_fitness = np.sum(fitness_matrix, axis=1)
+        # Get indices of top performers
+        elite_indices = np.argsort(total_fitness)[-elitism:]
+        # Add elite individuals to selection
+        selected.extend(elite_indices.tolist())
+    
+    # Perform regular lexicase selection for remaining slots
+    for _ in range(num_selected - elitism):
         # Shuffle the order of test cases
         case_order = rng.permutation(n_cases)
         
@@ -58,7 +68,7 @@ def numpy_lexicase_selection(fitness_matrix, num_selected, rng):
     return np.array(selected, dtype=int)
 
 
-def numpy_epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon, rng):
+def numpy_epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon, rng, elitism=0):
     """
     NumPy-based epsilon lexicase selection implementation.
     
@@ -67,6 +77,7 @@ def numpy_epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon, rng)
         num_selected: Number of individuals to select
         epsilon: Tolerance value(s). Can be scalar or array of length n_cases
         rng: NumPy random number generator
+        elitism: Number of best individuals to always include (by total fitness)
         
     Returns:
         NumPy array of selected individual indices
@@ -81,8 +92,17 @@ def numpy_epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon, rng)
     
     selected = []
     
-    # Perform selection
-    for _ in range(num_selected):
+    # Handle elitism: select best individuals by total fitness
+    if elitism > 0:
+        # Calculate total fitness for each individual
+        total_fitness = np.sum(fitness_matrix, axis=1)
+        # Get indices of top performers
+        elite_indices = np.argsort(total_fitness)[-elitism:]
+        # Add elite individuals to selection
+        selected.extend(elite_indices.tolist())
+    
+    # Perform selection for remaining slots
+    for _ in range(num_selected - elitism):
         # Shuffle the order of test cases
         case_order = rng.permutation(n_cases)
         
@@ -139,7 +159,7 @@ def numpy_compute_mad_epsilon(fitness_matrix):
     return mad_values
 
 
-def numpy_epsilon_lexicase_selection_with_mad(fitness_matrix, num_selected, rng):
+def numpy_epsilon_lexicase_selection_with_mad(fitness_matrix, num_selected, rng, elitism=0):
     """
     NumPy epsilon lexicase selection using MAD-based adaptive epsilon.
     
@@ -147,6 +167,7 @@ def numpy_epsilon_lexicase_selection_with_mad(fitness_matrix, num_selected, rng)
         fitness_matrix: NumPy array of shape (n_individuals, n_cases)
         num_selected: Number of individuals to select
         rng: NumPy random number generator
+        elitism: Number of best individuals to always include (by total fitness)
         
     Returns:
         NumPy array of selected individual indices
@@ -155,10 +176,10 @@ def numpy_epsilon_lexicase_selection_with_mad(fitness_matrix, num_selected, rng)
     epsilon_values = numpy_compute_mad_epsilon(fitness_matrix)
     
     # Use epsilon lexicase with computed epsilon
-    return numpy_epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon_values, rng)
+    return numpy_epsilon_lexicase_selection(fitness_matrix, num_selected, epsilon_values, rng, elitism)
 
 
-def numpy_downsample_lexicase_selection(fitness_matrix, num_selected, downsample_size, rng):
+def numpy_downsample_lexicase_selection(fitness_matrix, num_selected, downsample_size, rng, elitism=0):
     """
     NumPy-based downsampled lexicase selection implementation.
     
@@ -167,6 +188,7 @@ def numpy_downsample_lexicase_selection(fitness_matrix, num_selected, downsample
         num_selected: Number of individuals to select
         downsample_size: Number of test cases to randomly sample for each selection
         rng: NumPy random number generator
+        elitism: Number of best individuals to always include (by total fitness)
         
     Returns:
         NumPy array of selected individual indices
@@ -181,8 +203,17 @@ def numpy_downsample_lexicase_selection(fitness_matrix, num_selected, downsample
     actual_downsample_size = min(downsample_size, n_cases)
     selected = []
     
-    # Perform selection
-    for _ in range(num_selected):
+    # Handle elitism: select best individuals by total fitness
+    if elitism > 0:
+        # Calculate total fitness for each individual
+        total_fitness = np.sum(fitness_matrix, axis=1)
+        # Get indices of top performers
+        elite_indices = np.argsort(total_fitness)[-elitism:]
+        # Add elite individuals to selection
+        selected.extend(elite_indices.tolist())
+    
+    # Perform selection for remaining slots
+    for _ in range(num_selected - elitism):
         # Randomly sample test cases for this selection
         sampled_cases = rng.choice(
             n_cases, 

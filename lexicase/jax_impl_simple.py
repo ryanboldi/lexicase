@@ -58,7 +58,7 @@ def _lexicase_single_selection(fitness_matrix, key):
     return selected, key
 
 
-def jax_lexicase_selection_impl(fitness_matrix, num_selected, key):
+def jax_lexicase_selection_impl(fitness_matrix, num_selected, key, elitism=0):
     """
     JIT-friendly JAX lexicase selection implementation.
     
@@ -68,6 +68,17 @@ def jax_lexicase_selection_impl(fitness_matrix, num_selected, key):
     
     # Create output array with exact size needed
     selected_array = jnp.full(num_selected, -1, dtype=jnp.int32)
+    
+    # Handle elitism: select best individuals by total fitness
+    start_idx = 0
+    if elitism > 0:
+        # Calculate total fitness for each individual
+        total_fitness = jnp.sum(fitness_matrix, axis=1)
+        # Get indices of top performers
+        elite_indices = jnp.argsort(total_fitness)[-elitism:]
+        # Add elite individuals to selection
+        selected_array = selected_array.at[:elitism].set(elite_indices)
+        start_idx = elitism
     
     def loop_cond(state):
         i, _, _ = state
@@ -80,7 +91,7 @@ def jax_lexicase_selection_impl(fitness_matrix, num_selected, key):
         return i + 1, selected_array, new_key
     
     final_i, final_selected, final_key = lax.while_loop(
-        loop_cond, loop_body, (0, selected_array, key)
+        loop_cond, loop_body, (start_idx, selected_array, key)
     )
     
     return final_selected
@@ -136,7 +147,7 @@ def _epsilon_lexicase_single_selection(fitness_matrix, epsilon_values, key):
     return selected, key
 
 
-def jax_epsilon_lexicase_selection_impl(fitness_matrix, num_selected, epsilon, key):
+def jax_epsilon_lexicase_selection_impl(fitness_matrix, num_selected, epsilon, key, elitism=0):
     """
     JIT-friendly JAX epsilon lexicase selection implementation.
     """
@@ -147,6 +158,17 @@ def jax_epsilon_lexicase_selection_impl(fitness_matrix, num_selected, epsilon, k
     
     # Create output array with exact size needed
     selected_array = jnp.full(num_selected, -1, dtype=jnp.int32)
+    
+    # Handle elitism: select best individuals by total fitness
+    start_idx = 0
+    if elitism > 0:
+        # Calculate total fitness for each individual
+        total_fitness = jnp.sum(fitness_matrix, axis=1)
+        # Get indices of top performers
+        elite_indices = jnp.argsort(total_fitness)[-elitism:]
+        # Add elite individuals to selection
+        selected_array = selected_array.at[:elitism].set(elite_indices)
+        start_idx = elitism
     
     def loop_cond(state):
         i, _, _ = state
@@ -159,7 +181,7 @@ def jax_epsilon_lexicase_selection_impl(fitness_matrix, num_selected, epsilon, k
         return i + 1, selected_array, new_key
     
     final_i, final_selected, final_key = lax.while_loop(
-        loop_cond, loop_body, (0, selected_array, key)
+        loop_cond, loop_body, (start_idx, selected_array, key)
     )
     
     return final_selected
@@ -175,10 +197,10 @@ def jax_compute_mad_epsilon(fitness_matrix):
     return mad_values
 
 
-def jax_epsilon_lexicase_selection_with_mad(fitness_matrix, num_selected, key):
+def jax_epsilon_lexicase_selection_with_mad(fitness_matrix, num_selected, key, elitism=0):
     """JAX epsilon lexicase with MAD-based epsilon."""
     epsilon_values = jax_compute_mad_epsilon(fitness_matrix)
-    return jax_epsilon_lexicase_selection_impl(fitness_matrix, num_selected, epsilon_values, key)
+    return jax_epsilon_lexicase_selection_impl(fitness_matrix, num_selected, epsilon_values, key, elitism)
 
 
 def _downsample_lexicase_single_selection(fitness_matrix, downsample_size, key):
@@ -251,7 +273,7 @@ def _downsample_lexicase_single_selection(fitness_matrix, downsample_size, key):
     return selected, key
 
 
-def jax_downsample_lexicase_selection_impl(fitness_matrix, num_selected, downsample_size, key):
+def jax_downsample_lexicase_selection_impl(fitness_matrix, num_selected, downsample_size, key, elitism=0):
     """
     JIT-friendly JAX-based downsampled lexicase selection implementation.
     """
@@ -259,6 +281,17 @@ def jax_downsample_lexicase_selection_impl(fitness_matrix, num_selected, downsam
     
     # Create output array with exact size needed
     selected_array = jnp.full(num_selected, -1, dtype=jnp.int32)
+    
+    # Handle elitism: select best individuals by total fitness
+    start_idx = 0
+    if elitism > 0:
+        # Calculate total fitness for each individual
+        total_fitness = jnp.sum(fitness_matrix, axis=1)
+        # Get indices of top performers
+        elite_indices = jnp.argsort(total_fitness)[-elitism:]
+        # Add elite individuals to selection
+        selected_array = selected_array.at[:elitism].set(elite_indices)
+        start_idx = elitism
     
     def loop_cond(state):
         i, _, _ = state
@@ -271,7 +304,7 @@ def jax_downsample_lexicase_selection_impl(fitness_matrix, num_selected, downsam
         return i + 1, selected_array, new_key
     
     final_i, final_selected, final_key = lax.while_loop(
-        loop_cond, loop_body, (0, selected_array, key)
+        loop_cond, loop_body, (start_idx, selected_array, key)
     )
     
     return final_selected
