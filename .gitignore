@@ -13,3 +13,5 @@ htmlcov/
 .DS_Store
 *.swp
 *.swo 
+
+CLAUDE.md

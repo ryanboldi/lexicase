@@ -2,7 +2,7 @@
 Utility functions for lexicase selection.
 """
 
-from .backend import get_lib
+import numpy as np
 
 
 def validate_fitness_matrix(fitness_matrix):
@@ -14,8 +14,7 @@ def validate_fitness_matrix(fitness_matrix):
     Raises:
         ValueError: If matrix format is invalid
     """
-    xp, _ = get_lib()
-    fitness_matrix = xp.asarray(fitness_matrix)
+    fitness_matrix = np.asarray(fitness_matrix)
     
     if fitness_matrix.ndim != 2:
         raise ValueError("Fitness matrix must be 2-dimensional")
@@ -56,8 +55,6 @@ def shuffle_cases(num_cases, rng):
     Returns:
         Array of shuffled case indices
     """
-    xp, _ = get_lib()
-    
     if hasattr(rng, 'permutation'):  # NumPy
         return rng.permutation(num_cases)
     else:  # JAX
@@ -74,8 +71,7 @@ def compute_case_variance(fitness_matrix):
     Returns:
         Array of variances for each test case
     """
-    xp, _ = get_lib()
-    return xp.var(fitness_matrix, axis=0)
+    return np.var(fitness_matrix, axis=0)
 
 
 def select_informative_cases(fitness_matrix, downsample_size, rng):
@@ -89,14 +85,12 @@ def select_informative_cases(fitness_matrix, downsample_size, rng):
     Returns:
         Array of selected case indices
     """
-    xp, _ = get_lib()
-    
     variances = compute_case_variance(fitness_matrix)
     num_cases = fitness_matrix.shape[1]
     
     # If all variances are zero or very small, fall back to uniform sampling
-    if xp.all(variances < 1e-10):
-        case_indices = xp.arange(num_cases)
+    if np.all(variances < 1e-10):
+        case_indices = np.arange(num_cases)
         if hasattr(rng, 'choice'):  # NumPy
             return rng.choice(case_indices, size=min(downsample_size, num_cases), replace=False)
         else:  # JAX
@@ -104,7 +98,7 @@ def select_informative_cases(fitness_matrix, downsample_size, rng):
             return jax.random.choice(rng, case_indices, shape=(min(downsample_size, num_cases),), replace=False)
     
     # Select cases with probability proportional to variance
-    probabilities = variances / xp.sum(variances)
+    probabilities = variances / np.sum(variances)
     
     if hasattr(rng, 'choice'):  # NumPy
         return rng.choice(
@@ -136,20 +130,18 @@ def compute_mad_epsilon(fitness_matrix):
     Returns:
         Array of MAD values for each test case
     """
-    xp, _ = get_lib()
-    
     # Calculate median for each case (column) - more robust than mean
-    case_medians = xp.median(fitness_matrix, axis=0)
+    case_medians = np.median(fitness_matrix, axis=0)
     
     # Calculate absolute deviations from median for each case
-    abs_deviations = xp.abs(fitness_matrix - case_medians[None, :])
+    abs_deviations = np.abs(fitness_matrix - case_medians[None, :])
     
     # Calculate median of absolute deviations for each case
-    mad_values = xp.median(abs_deviations, axis=0)
+    mad_values = np.median(abs_deviations, axis=0)
     
     # Handle case where MAD is 0 (all values identical) by using a small default
     min_epsilon = 1e-10
-    mad_values = xp.maximum(mad_values, min_epsilon)
+    mad_values = np.maximum(mad_values, min_epsilon)
     
     return mad_values
 

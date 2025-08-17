@@ -2,7 +2,7 @@
 Downsampled lexicase selection implementation.
 """
 
-from .backend import get_lib
+import numpy as np
 from .utils import validate_fitness_matrix, validate_selection_params, shuffle_cases
 
 
@@ -34,7 +34,7 @@ def downsample_lexicase_selection(fitness_matrix, num_selected, downsample_size,
         raise ValueError("Downsample size must be positive")
     
     if num_selected == 0:
-        xp, _ = get_lib()
+        xp = np
         return xp.array([], dtype=int)
     
     xp, rng = get_lib(seed)

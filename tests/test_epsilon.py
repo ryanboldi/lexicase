@@ -4,7 +4,7 @@ Tests for epsilon lexicase selection.
 
 import pytest
 import numpy as np
-from lexicase import epsilon_lexicase_selection, lexicase_selection, set_backend
+from lexicase import epsilon_lexicase_selection, lexicase_selection
 
 # Check if JAX is available
 try:
@@ -29,10 +29,9 @@ def _to_set(arr):
 class TestEpsilonLexicase:
     """Test cases for epsilon lexicase selection."""
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_epsilon_bounds(self, backend):
+    
+    def test_epsilon_bounds(self):
         """Test that epsilon creates appropriate bounds for selection."""
-        set_backend(backend)
         
         fitness_matrix = np.array([
             [10.0, 5.0, 1.0],
@@ -55,10 +54,9 @@ class TestEpsilonLexicase:
         diversity_large = len(_to_set(selected_large))
         assert diversity_large >= diversity_small
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_equivalence_to_base_with_zero_epsilon(self, backend):
+    
+    def test_equivalence_to_base_with_zero_epsilon(self):
         """Test that epsilon=0 is equivalent to base lexicase."""
-        set_backend(backend)
         
         fitness_matrix = np.array([
             [10, 5, 1],
@@ -74,10 +72,9 @@ class TestEpsilonLexicase:
         # Should produce identical results
         assert np.array_equal(base_selected, epsilon_selected)
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_epsilon_correctness(self, backend):
+    
+    def test_epsilon_correctness(self):
         """Test correctness of epsilon lexicase logic."""
-        set_backend(backend)
         
         # Clear case where epsilon should make a difference
         fitness_matrix = np.array([
@@ -97,20 +94,18 @@ class TestEpsilonLexicase:
         assert len(unique_selected.intersection({0, 1})) > 0
         assert 2 not in unique_selected
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_negative_epsilon_error(self, backend):
+    
+    def test_negative_epsilon_error(self):
         """Test that negative epsilon raises error."""
-        set_backend(backend)
         
         fitness_matrix = np.array([[1, 2], [3, 4]])
         
         with pytest.raises(ValueError, match="Epsilon must be non-negative"):
             epsilon_lexicase_selection(fitness_matrix, num_selected=1, epsilon=-0.1)
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_large_epsilon_selects_all(self, backend):
+    
+    def test_large_epsilon_selects_all(self):
         """Test that very large epsilon allows all individuals to be competitive."""
-        set_backend(backend)
         
         fitness_matrix = np.array([
             [100, 0],
@@ -128,10 +123,9 @@ class TestEpsilonLexicase:
 
     # STRESS TESTS - Rigorous epsilon lexicase validation
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_epsilon_scaling_stress(self, backend):
+    
+    def test_epsilon_scaling_stress(self):
         """Stress test how epsilon affects selection with large populations."""
-        set_backend(backend)
         
         # 50 individuals, 25 test cases
         np.random.seed(456)
@@ -165,10 +159,9 @@ class TestEpsilonLexicase:
         assert large_epsilon_diversity >= zero_epsilon_diversity, \
             "Large epsilon should not be more restrictive than zero epsilon"
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_epsilon_threshold_behavior(self, backend):
+    
+    def test_epsilon_threshold_behavior(self):
         """Test precise epsilon threshold behavior."""
-        set_backend(backend)
         
         # Carefully crafted fitness matrix to test epsilon thresholds
         fitness_matrix = np.array([
@@ -202,10 +195,9 @@ class TestEpsilonLexicase:
         assert selection_counts_small[0] >= selection_counts[0], \
             "Individual 0 should be selected at least as much with smaller epsilon"
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_epsilon_with_many_close_performers(self, backend):
+    
+    def test_epsilon_with_many_close_performers(self):
         """Test epsilon lexicase with many individuals having similar performance."""
-        set_backend(backend)
         
         # 40 individuals, 20 test cases
         # Create fitness landscape with many close performers
@@ -247,10 +239,9 @@ class TestEpsilonLexicase:
         assert top_3_small > 0, "Top individuals should be selected with small epsilon"
         assert top_3_large > 0, "Top individuals should be selected with large epsilon"
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_epsilon_extreme_fitness_ranges(self, backend):
+    
+    def test_epsilon_extreme_fitness_ranges(self):
         """Test epsilon lexicase with extreme fitness value ranges."""
-        set_backend(backend)
         
         # Test with very large fitness values
         fitness_matrix = np.array([
@@ -281,10 +272,9 @@ class TestEpsilonLexicase:
         diversity_large = len(_to_set(selected_large))
         assert diversity_large >= diversity_small
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_epsilon_consistency_across_runs(self, backend):
+    
+    def test_epsilon_consistency_across_runs(self):
         """Test that epsilon lexicase maintains consistent behavior across multiple runs."""
-        set_backend(backend)
         
         # 30 individuals, 15 test cases
         np.random.seed(999)
@@ -333,11 +323,10 @@ class TestEpsilonLexicase:
 @pytest.fixture(params=BACKENDS)
 def backend(request):
     """Test with different backends."""
-    set_backend(request.param)
     return request.param
 
 
-def test_epsilon_basic_functionality(backend):
+def test_epsilon_basic_functionality():
     """Test basic epsilon lexicase functionality."""
     fitnesses = np.array([
         [1.0, 0.0, 1.0],
@@ -350,7 +339,7 @@ def test_epsilon_basic_functionality(backend):
     assert selected[0] in [0, 1, 2]
 
 
-def test_epsilon_selection_behavior(backend):
+def test_epsilon_selection_behavior():
     """Test epsilon lexicase selection behavior with different epsilon values."""
     # Create a controlled fitness matrix
     fitnesses = np.array([
@@ -380,7 +369,7 @@ def test_epsilon_selection_behavior(backend):
     assert selection_counts_large[3] < max(selection_counts_large[:3])
 
 
-def test_epsilon_basic_lexicase_behavior(backend):
+def test_epsilon_basic_lexicase_behavior():
     """Test basic epsilon lexicase behavior."""
     fitnesses = np.array([
         [1.0, 1.0, 1.0],  # Individual 0: mediocre
@@ -395,7 +384,7 @@ def test_epsilon_basic_lexicase_behavior(backend):
     assert all(0 <= idx < 3 for idx in selected)
 
 
-def test_epsilon_vs_regular_behavior(backend):
+def test_epsilon_vs_regular_behavior():
     """Test that epsilon lexicase behaves differently from regular lexicase."""
     # Create a case where epsilon should make a difference
     fitnesses = np.array([
@@ -416,7 +405,7 @@ def test_epsilon_vs_regular_behavior(backend):
     assert len(unique_selections) >= 3
 
 
-def test_epsilon_deterministic(backend):
+def test_epsilon_deterministic():
     """Test that epsilon lexicase is deterministic with same seed."""
     fitnesses = np.array([
         [1.0, 0.0, 1.0],
@@ -430,7 +419,7 @@ def test_epsilon_deterministic(backend):
     np.testing.assert_array_equal(selected1, selected2)
 
 
-def test_epsilon_empty_selection(backend):
+def test_epsilon_empty_selection():
     """Test epsilon lexicase with zero selections."""
     fitnesses = np.array([
         [1.0, 0.0],
@@ -441,7 +430,7 @@ def test_epsilon_empty_selection(backend):
     assert len(selected) == 0
 
 
-def test_epsilon_single_individual(backend):
+def test_epsilon_single_individual():
     """Test epsilon lexicase with single individual."""
     fitnesses = np.array([[1.0, 0.5, 0.0]])
     
@@ -450,7 +439,7 @@ def test_epsilon_single_individual(backend):
     assert selected[0] == 0
 
 
-def test_epsilon_with_ties(backend):
+def test_epsilon_with_ties():
     """Test epsilon lexicase with tied individuals."""
     # Create scenario with many ties
     fitnesses = np.array([
@@ -470,7 +459,7 @@ def test_epsilon_with_ties(backend):
     assert len(unique_selections) >= 2  # Some distribution
 
 
-def test_epsilon_large_population(backend):
+def test_epsilon_large_population():
     """Test epsilon lexicase with larger population."""
     np.random.seed(123)
     n_individuals = 50
@@ -488,7 +477,7 @@ def test_epsilon_large_population(backend):
     assert all(0 <= idx < n_individuals for idx in selected)
 
 
-def test_epsilon_edge_cases(backend):
+def test_epsilon_edge_cases():
     """Test epsilon lexicase with edge cases."""
     # Case where all values are the same
     fitnesses_same = np.array([
@@ -513,7 +502,7 @@ def test_epsilon_edge_cases(backend):
     assert all(0 <= idx < 3 for idx in selected)
 
 
-def test_epsilon_case_order_independence(backend):
+def test_epsilon_case_order_independence():
     """Test that epsilon lexicase handles case order correctly."""
     fitnesses = np.array([
         [10, 1, 1],  # Individual 0: specialist on case 0
@@ -534,7 +523,7 @@ def test_epsilon_case_order_independence(backend):
     assert len(unique_results) >= 2
 
 
-def test_epsilon_basic_behavior(backend):
+def test_epsilon_basic_behavior():
     """Test basic epsilon lexicase behavior."""
     fitnesses = np.array([
         [1.0, 1.0, 1.0],
@@ -550,7 +539,7 @@ def test_epsilon_basic_behavior(backend):
     assert all(0 <= idx < 3 for idx in selected)
 
 
-def test_epsilon_stress_test(backend):
+def test_epsilon_stress_test():
     """Stress test epsilon lexicase with complex fitness landscape."""
     np.random.seed(456)
     n_individuals = 30
@@ -577,11 +566,10 @@ def test_epsilon_stress_test(backend):
 class TestMADEpsilon:
     """Test cases for MAD-based epsilon functionality."""
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_compute_mad_epsilon_basic(self, backend):
+    
+    def test_compute_mad_epsilon_basic(self):
         """Test basic MAD computation."""
         from lexicase.utils import compute_mad_epsilon
-        set_backend(backend)
         
         # Simple case where MAD can be calculated manually
         fitness_matrix = np.array([
@@ -597,11 +585,10 @@ class TestMADEpsilon:
         assert np.all(mad_values > 0)
         assert np.all(np.isfinite(mad_values))
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_compute_mad_epsilon_identical_values(self, backend):
+    
+    def test_compute_mad_epsilon_identical_values(self):
         """Test MAD computation when all values in a case are identical."""
         from lexicase.utils import compute_mad_epsilon
-        set_backend(backend)
         
         # All values identical in each case
         fitness_matrix = np.array([
@@ -617,11 +604,10 @@ class TestMADEpsilon:
         assert mad_values.shape == (3,)
         assert np.all(mad_values == 1e-10)
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_compute_mad_epsilon_mixed_cases(self, backend):
+    
+    def test_compute_mad_epsilon_mixed_cases(self):
         """Test MAD computation with mixed variance cases."""
         from lexicase.utils import compute_mad_epsilon
-        set_backend(backend)
         
         # Case 0: high variance, Case 1: low variance, Case 2: identical values
         fitness_matrix = np.array([
@@ -638,10 +624,9 @@ class TestMADEpsilon:
         assert mad_values[1] > mad_values[2]  # Low variance > min epsilon
         assert mad_values[2] == 1e-10  # Identical values get min epsilon
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_epsilon_none_uses_mad(self, backend):
+    
+    def test_epsilon_none_uses_mad(self):
         """Test that epsilon=None uses MAD by default."""
-        set_backend(backend)
         
         fitness_matrix = np.array([
             [10.0, 100.0, 5.0],
@@ -665,10 +650,9 @@ class TestMADEpsilon:
         # Should produce identical results
         assert np.array_equal(selected_mad, selected_manual_mad)
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_epsilon_array_input(self, backend):
+    
+    def test_epsilon_array_input(self):
         """Test epsilon lexicase with per-case epsilon array."""
-        set_backend(backend)
         
         fitness_matrix = np.array([
             [10.0, 100.0, 5.0],
@@ -687,10 +671,9 @@ class TestMADEpsilon:
         assert len(selected) == 10
         assert all(0 <= idx < 4 for idx in selected)
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_epsilon_array_wrong_length_error(self, backend):
+    
+    def test_epsilon_array_wrong_length_error(self):
         """Test that epsilon array with wrong length raises error."""
-        set_backend(backend)
         
         fitness_matrix = np.array([
             [10.0, 100.0, 5.0],
@@ -705,10 +688,9 @@ class TestMADEpsilon:
                 fitness_matrix, num_selected=1, epsilon=epsilon_array, seed=42
             )
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_epsilon_array_negative_values_error(self, backend):
+    
+    def test_epsilon_array_negative_values_error(self):
         """Test that epsilon array with negative values raises error."""
-        set_backend(backend)
         
         fitness_matrix = np.array([
             [10.0, 100.0, 5.0],
@@ -723,10 +705,9 @@ class TestMADEpsilon:
                 fitness_matrix, num_selected=1, epsilon=epsilon_array, seed=42
             )
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_mad_vs_fixed_epsilon_diversity(self, backend):
+    
+    def test_mad_vs_fixed_epsilon_diversity(self):
         """Test that MAD epsilon provides reasonable diversity compared to fixed epsilon."""
-        set_backend(backend)
         
         # Create fitness matrix with different scales per case
         np.random.seed(123)
@@ -767,10 +748,9 @@ class TestMADEpsilon:
         # MAD should provide meaningful selection (not everything, not nothing)
         assert 0 < diversity_mad < len(fitness_matrix), "MAD should provide selective but non-trivial diversity"
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_backward_compatibility(self, backend):
+    
+    def test_backward_compatibility(self):
         """Test that existing code with explicit epsilon still works."""
-        set_backend(backend)
         
         fitness_matrix = np.array([
             [10.0, 5.0, 1.0],
@@ -792,10 +772,9 @@ class TestMADEpsilon:
         assert len(selected_old_way) == 20
         assert all(0 <= idx < 3 for idx in selected_old_way)
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_mad_epsilon_deterministic(self, backend):
+    
+    def test_mad_epsilon_deterministic(self):
         """Test that MAD epsilon selection is deterministic with same seed."""
-        set_backend(backend)
         
         fitness_matrix = np.array([
             [10.0, 5.0, 1.0, 20.0],
@@ -813,10 +792,9 @@ class TestMADEpsilon:
         
         assert np.array_equal(selected1, selected2)
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_mad_epsilon_stress_test(self, backend):
+    
+    def test_mad_epsilon_stress_test(self):
         """Stress test MAD epsilon with complex fitness landscapes."""
-        set_backend(backend)
         
         np.random.seed(789)
         n_individuals = 30
@@ -854,10 +832,9 @@ class TestMADEpsilon:
         # At least 60% of selections should be from structured individuals
         assert structured_selections >= 36, "Structured individuals should be favored"
     
-    @pytest.mark.parametrize("backend", BACKENDS)
-    def test_mad_with_outliers(self, backend):
+    
+    def test_mad_with_outliers(self):
         """Test MAD epsilon behavior with outliers in fitness values."""
-        set_backend(backend)
         
         fitness_matrix = np.array([
             [10.0, 10.0, 10.0],

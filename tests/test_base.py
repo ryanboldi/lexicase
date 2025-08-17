@@ -1,22 +1,12 @@
 """
 Tests for base lexicase selection.
+
+Tests now use the automatic dispatch system - no backend switching needed.
 """
 
 import numpy as np
 import pytest
-from lexicase import lexicase_selection, epsilon_lexicase_selection, set_backend
-
-# Check if JAX is available
-try:
-    import jax
-    JAX_AVAILABLE = True
-except ImportError:
-    JAX_AVAILABLE = False
-
-# Set up backend parameters based on availability
-BACKENDS = ['numpy']
-if JAX_AVAILABLE:
-    BACKENDS.append('jax')
+from lexicase import lexicase_selection, epsilon_lexicase_selection
 
 
 def _to_set(arr):
@@ -26,18 +16,11 @@ def _to_set(arr):
     return set(arr)
 
 
-@pytest.fixture(params=BACKENDS)
-def backend(request):
-    """Test with different backends."""
-    set_backend(request.param)
-    return request.param
-
-
-def test_basic_selection(backend):
+def test_basic_selection():
     """Test basic lexicase selection functionality."""
     fitnesses = np.array([
         [1.0, 0.0, 1.0],  # Individual 0: good at cases 0,2
-        [0.0, 1.0, 0.0],  # Individual 1: good at case 1
+        [0.0, 1.0, 0.0],  # Individual 1: good at case 1  
         [0.5, 0.5, 0.5],  # Individual 2: mediocre at all
     ])
     
@@ -46,7 +29,7 @@ def test_basic_selection(backend):
     assert selected[0] in [0, 1, 2]
 
 
-def test_deterministic_with_seed(backend):
+def test_deterministic_with_seed():
     """Test that results are deterministic when seed is provided."""
     fitnesses = np.array([
         [1.0, 0.0, 1.0],
@@ -60,7 +43,7 @@ def test_deterministic_with_seed(backend):
     np.testing.assert_array_equal(selected1, selected2)
 
 
-def test_basic_lexicase_behavior(backend):
+def test_basic_lexicase_behavior():
     """Test basic lexicase selection behavior."""
     fitnesses = np.array([
         [0.5, 0.5, 0.5],  # Individual 0: mediocre
@@ -75,7 +58,7 @@ def test_basic_lexicase_behavior(backend):
     assert all(0 <= idx < 3 for idx in selected)
 
 
-def test_select_population_size(backend):
+def test_select_population_size():
     """Test selecting specific number of individuals."""
     fitnesses = np.array([
         [1.0, 0.0],
@@ -88,7 +71,7 @@ def test_select_population_size(backend):
     assert len(selected) == 3
 
 
-def test_empty_selection(backend):
+def test_empty_selection():
     """Test selecting zero individuals."""
     fitnesses = np.array([
         [1.0, 0.0],
@@ -99,7 +82,7 @@ def test_empty_selection(backend):
     assert len(selected) == 0
 
 
-def test_single_individual(backend):
+def test_single_individual():
     """Test with single individual population."""
     fitnesses = np.array([[1.0, 0.5, 0.0]])
     
@@ -108,7 +91,7 @@ def test_single_individual(backend):
     assert selected[0] == 0
 
 
-def test_single_case(backend):
+def test_single_case():
     """Test with single test case."""
     fitnesses = np.array([
         [1.0],
@@ -121,7 +104,7 @@ def test_single_case(backend):
     assert selected[0] == 0  # Best individual should be selected
 
 
-def test_epsilon_lexicase_selection(backend):
+def test_epsilon_lexicase_selection():
     """Test epsilon lexicase selection."""
     fitnesses = np.array([
         [1.0, 0.0, 1.0],
@@ -137,7 +120,7 @@ def test_epsilon_lexicase_selection(backend):
     assert all(0 <= idx < 3 for idx in selected_epsilon)
 
 
-def test_invalid_inputs(backend):
+def test_invalid_inputs():
     """Test error handling for invalid inputs."""
     fitnesses = np.array([[1.0, 0.0], [0.0, 1.0]])
     
@@ -150,7 +133,7 @@ def test_invalid_inputs(backend):
         lexicase_selection(fitnesses, num_selected=1, seed="invalid")
 
 
-def test_stress_large_population(backend):
+def test_stress_large_population():
     """Stress test with larger population."""
     np.random.seed(42)
     n_individuals = 50
@@ -165,7 +148,7 @@ def test_stress_large_population(backend):
     assert all(0 <= idx < n_individuals for idx in selected)
 
 
-def test_tie_breaking(backend):
+def test_tie_breaking():
     """Test tie-breaking behavior."""
     # All individuals are identical
     fitnesses = np.array([
@@ -181,7 +164,7 @@ def test_tie_breaking(backend):
     assert all(0 <= idx < 3 for idx in selected)
 
 
-def test_specialist_selection(backend):
+def test_specialist_selection():
     """Test that specialists can be selected."""
     # Create specialists for different cases
     fitnesses = np.array([
@@ -202,7 +185,7 @@ def test_specialist_selection(backend):
     assert len(unique_selections) >= 2  # Some diversity
 
 
-def test_case_order_matters(backend):
+def test_case_order_matters():
     """Test that case order affects selection."""
     fitnesses = np.array([
         [10, 1, 1],  # Individual 0: best on case 0
@@ -223,7 +206,7 @@ def test_case_order_matters(backend):
     assert len(unique_results) >= 2  # At least some variation
 
 
-def test_filtering_logic(backend):
+def test_filtering_logic():
     """Test the filtering logic works correctly."""
     fitnesses = np.array([
         [100, 1, 1],   # Individual 0: excellent on case 0
@@ -244,7 +227,7 @@ def test_filtering_logic(backend):
     assert selection_counts[4] < max(selection_counts)  # Worst should be selected less
 
 
-def test_epsilon_vs_regular_comparison(backend):
+def test_epsilon_vs_regular_comparison():
     """Test comparison between epsilon and regular lexicase."""
     fitnesses = np.array([
         [100, 1, 1],
@@ -277,7 +260,7 @@ def test_epsilon_vs_regular_comparison(backend):
     assert diversity_large_eps >= diversity_regular * 0.5  # At least half the diversity
 
 
-def test_epsilon_behavior(backend):
+def test_epsilon_behavior():
     """Test epsilon lexicase behavior."""
     fitnesses = np.array([
         [100, 1, 1],
@@ -297,7 +280,7 @@ def test_epsilon_behavior(backend):
     assert len(unique_selected) >= 2
 
 
-def test_multiple_cases_sufficient(backend):
+def test_multiple_cases_sufficient():
     """Test that multiple cases provide sufficient selection pressure."""
     np.random.seed(123)
     

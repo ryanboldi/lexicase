@@ -2,7 +2,7 @@
 Base lexicase selection implementation.
 """
 
-from .backend import get_lib
+import numpy as np
 from .utils import validate_fitness_matrix, validate_selection_params
 
 
@@ -28,7 +28,7 @@ def lexicase_selection(fitness_matrix, num_selected, seed=None):
     validate_selection_params(num_selected, seed)
     
     if num_selected == 0:
-        xp, _ = get_lib()
+        xp = np
         return xp.array([], dtype=int)
 
     xp, rng = get_lib(seed)
