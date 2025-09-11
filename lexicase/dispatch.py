@@ -269,3 +269,69 @@ def downsample_lexicase_selection(fitness_matrix, num_selected, downsample_size,
         return numpy_downsample_lexicase_selection(fitness_matrix, num_selected, downsample_size, rng, elitism)
 
 
+def informed_downsample_lexicase_selection(
+    fitness_matrix, num_selected, downsample_size, seed=None, 
+    sample_rate=0.01, threshold=None, elitism=0
+):
+    """
+    Informed downsampled lexicase selection with automatic dispatch based on array type.
+    
+    Uses population statistics to select informative test cases that are maximally
+    different from each other, rather than random sampling. This can improve
+    problem-solving success by ensuring diverse test coverage.
+    
+    Args:
+        fitness_matrix: Array of shape (n_individuals, n_cases) containing
+                       fitness values. Higher values indicate better performance.
+        num_selected: Number of individuals to select
+        downsample_size: Number of test cases to select for each selection
+        seed: Random seed for reproducibility
+        sample_rate: Fraction of population to sample for distance calculation (default 0.01)
+        threshold: Optional threshold for pass/fail determination. If None (default),
+                  uses median performance per case. Can be scalar or array per case.
+        elitism: Number of best individuals to always include (by total fitness).
+                 The remaining (num_selected - elitism) slots are filled via
+                 informed downsampled lexicase selection. Default is 0 (no elitism).
+        
+    Returns:
+        Array of selected individual indices (same type as input)
+        
+    Raises:
+        ValueError: If inputs are invalid
+    """
+    # Validate inputs
+    fitness_matrix, is_jax = _validate_and_convert_fitness_matrix(fitness_matrix)
+    _validate_selection_params(num_selected, seed)
+    
+    if downsample_size <= 0:
+        raise ValueError("Downsample size must be positive")
+    
+    if sample_rate <= 0 or sample_rate > 1:
+        raise ValueError("Sample rate must be between 0 and 1")
+    
+    # Validate elitism parameter
+    if elitism < 0:
+        raise ValueError("Elitism must be non-negative")
+    if elitism > num_selected:
+        raise ValueError("Elitism cannot exceed num_selected")
+    if elitism > fitness_matrix.shape[0]:
+        raise ValueError("Elitism cannot exceed number of individuals")
+    
+    if is_jax and JAX_AVAILABLE:
+        # Use JAX implementation
+        from .jax_impl_simple import jax_informed_downsample_lexicase_selection_impl
+        key = jax.random.PRNGKey(seed or 0)
+        return jax_informed_downsample_lexicase_selection_impl(
+            fitness_matrix, num_selected, downsample_size, key, 
+            sample_rate, threshold, elitism
+        )
+    else:
+        # Use NumPy implementation
+        from .numpy_impl import numpy_informed_downsample_lexicase_selection
+        rng = np.random.default_rng(seed)
+        return numpy_informed_downsample_lexicase_selection(
+            fitness_matrix, num_selected, downsample_size, rng,
+            sample_rate, threshold, elitism
+        )
+
+

@@ -9,7 +9,8 @@ with automatic dispatch based on array type (NumPy or JAX).
 from .dispatch import (
     lexicase_selection, 
     epsilon_lexicase_selection, 
-    downsample_lexicase_selection
+    downsample_lexicase_selection,
+    informed_downsample_lexicase_selection
 )
 
 # Direct access to implementation modules (for advanced users)
@@ -20,11 +21,12 @@ from .base import lexicase_selection as _legacy_lexicase_selection
 from .epsilon import epsilon_lexicase_selection as _legacy_epsilon_lexicase_selection
 from .downsample import downsample_lexicase_selection as _legacy_downsample_lexicase_selection
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 __all__ = [
     "lexicase_selection", 
     "epsilon_lexicase_selection", 
     "downsample_lexicase_selection",
+    "informed_downsample_lexicase_selection",
     "jax_impl",
     "numpy_impl"
 ] 

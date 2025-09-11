@@ -9,6 +9,7 @@ Lexicase selection is a parent selection method used in evolutionary computation
 - **Base Lexicase**: Standard lexicase selection algorithm
 - **Epsilon Lexicase**: Allows individuals within epsilon of the best to be considered equally good (uses adaptive MAD-based epsilon by default)
 - **Downsampled Lexicase**: Uses random subsets of test cases to increase diversity
+- **Elitism (new in 0.2)**: Optionally reserve a fixed number of slots for the top individuals by total fitness before running lexicase on the remainder
 
 ## 📦 Installation
 
@@ -105,6 +106,42 @@ selected_eps = lexicase.epsilon_lexicase_selection(
     seed=42  # Uses adaptive MAD-based epsilon by default
 )
 ```
+
+### Elitism (works with all methods)
+```python
+# Always include the top-k individuals by total fitness, then fill the
+# remaining slots using the chosen lexicase variant.
+
+# Standard lexicase with 2 elites
+selected = lexicase.lexicase_selection(
+    fitness_matrix,
+    num_selected=10,
+    seed=42,
+    elitism=2,
+)
+
+# Epsilon lexicase with 1 elite
+selected_eps = lexicase.epsilon_lexicase_selection(
+    fitness_matrix,
+    num_selected=10,
+    seed=42,
+    elitism=1,
+)
+
+# Downsampled lexicase with 1 elite
+selected_ds = lexicase.downsample_lexicase_selection(
+    fitness_matrix,
+    num_selected=10,
+    downsample_size=5,
+    seed=42,
+    elitism=1,
+)
+```
+
+Notes:
+- Elites are determined by total fitness (sum across cases).
+- `elitism` must be between 0 and `num_selected` and cannot exceed the number of individuals.
+- The return type matches the input array type (NumPy or JAX).
 
 ## 🔧 Automatic Dispatch System
 
@@ -247,7 +284,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## TODOs:
 
 - [ ] make jax implementaion faster, and jittable.
-- [ ] Add informed down-sampling
+- [x] Add informed down-sampling
 - [ ] Add some demo notebooks
 
 ## 🔗 References

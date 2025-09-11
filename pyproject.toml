@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lexicase"
-version = "0.1.1"
+version = "0.2.0"
 description = "Fast, vectorized lexicase selection in NumPy and JAX"
 readme = "README.md"
 authors = [{name = "Ryan Bahlous-Boldi", email = "your.email@example.com"}]

@@ -251,3 +251,185 @@ def numpy_downsample_lexicase_selection(fitness_matrix, num_selected, downsample
             selected.append(int(candidates[chosen_idx]))
     
     return np.array(selected, dtype=int)
+
+
+def _compute_case_distances(fitness_matrix, sample_indices, threshold=None):
+    """
+    Compute pairwise distances between test cases based on solve patterns.
+    
+    Args:
+        fitness_matrix: Full fitness matrix (n_individuals, n_cases)
+        sample_indices: Indices of individuals to use for distance calculation
+        threshold: Optional threshold for pass/fail. If None, uses median per case.
+        
+    Returns:
+        Distance matrix of shape (n_cases, n_cases)
+    """
+    # Get sampled fitness values
+    sampled_fitness = fitness_matrix[sample_indices, :]
+    n_samples, n_cases = sampled_fitness.shape
+    
+    # Create binary solve matrix
+    if threshold is None:
+        # Use median as threshold for each case
+        thresholds = np.median(sampled_fitness, axis=0)
+        solve_matrix = sampled_fitness > thresholds[None, :]
+    elif np.isscalar(threshold):
+        # Use single threshold for all
+        solve_matrix = sampled_fitness > threshold
+    else:
+        # Use per-case thresholds
+        solve_matrix = sampled_fitness > threshold[None, :]
+    
+    # Compute Hamming distances between cases
+    distances = np.zeros((n_cases, n_cases))
+    for i in range(n_cases):
+        for j in range(i + 1, n_cases):
+            # Hamming distance: count differences in solve patterns
+            distance = np.sum(solve_matrix[:, i] != solve_matrix[:, j])
+            distances[i, j] = distance
+            distances[j, i] = distance
+    
+    return distances
+
+
+def _farthest_first_traversal(distances, downsample_size, rng):
+    """
+    Select cases using Farthest First Traversal algorithm.
+    
+    Args:
+        distances: Pairwise distance matrix between cases (n_cases, n_cases)
+        downsample_size: Number of cases to select
+        rng: NumPy random number generator
+        
+    Returns:
+        Array of selected case indices
+    """
+    n_cases = distances.shape[0]
+    
+    # Handle edge cases
+    if downsample_size >= n_cases:
+        return np.arange(n_cases)
+    
+    selected = []
+    remaining = list(range(n_cases))
+    
+    # Randomly select first case
+    first_idx = rng.choice(remaining)
+    selected.append(first_idx)
+    remaining.remove(first_idx)
+    
+    # Iteratively add cases that maximize minimum distance to selected cases
+    while len(selected) < downsample_size and remaining:
+        min_distances = []
+        
+        for case_idx in remaining:
+            # Find minimum distance to any selected case
+            min_dist = min(distances[case_idx, s] for s in selected)
+            min_distances.append(min_dist)
+        
+        # Find cases with maximum minimum distance
+        min_distances = np.array(min_distances)
+        max_min_dist = np.max(min_distances)
+        
+        # Handle ties randomly
+        candidates = [remaining[i] for i in range(len(remaining)) 
+                     if min_distances[i] == max_min_dist]
+        
+        if candidates:
+            chosen = rng.choice(candidates)
+            selected.append(chosen)
+            remaining.remove(chosen)
+        else:
+            # If all distances are 0, randomly select from remaining
+            chosen = rng.choice(remaining)
+            selected.append(chosen)
+            remaining.remove(chosen)
+    
+    return np.array(selected)
+
+
+def numpy_informed_downsample_lexicase_selection(
+    fitness_matrix, num_selected, downsample_size, rng, 
+    sample_rate=0.01, threshold=None, elitism=0
+):
+    """
+    NumPy-based informed downsampled lexicase selection implementation.
+    
+    Uses population statistics to select informative test cases rather than
+    random sampling.
+    
+    Args:
+        fitness_matrix: NumPy array of shape (n_individuals, n_cases)
+        num_selected: Number of individuals to select
+        downsample_size: Number of test cases to select for each selection
+        rng: NumPy random number generator
+        sample_rate: Fraction of population to sample for distance calculation
+        threshold: Optional threshold for pass/fail. If None, uses median.
+        elitism: Number of best individuals to always include (by total fitness)
+        
+    Returns:
+        NumPy array of selected individual indices
+    """
+    if num_selected == 0:
+        return np.array([], dtype=int)
+    
+    if downsample_size <= 0:
+        raise ValueError("Downsample size must be positive")
+    
+    n_individuals, n_cases = fitness_matrix.shape
+    actual_downsample_size = min(downsample_size, n_cases)
+    
+    selected = []
+    
+    # Handle elitism: select best individuals by total fitness
+    if elitism > 0:
+        # Calculate total fitness for each individual
+        total_fitness = np.sum(fitness_matrix, axis=1)
+        # Get indices of top performers
+        elite_indices = np.argsort(total_fitness)[-elitism:]
+        # Add elite individuals to selection
+        selected.extend(elite_indices.tolist())
+    
+    # Sample individuals for distance calculation
+    n_samples = max(1, int(n_individuals * sample_rate))
+    sample_indices = rng.choice(n_individuals, size=n_samples, replace=False)
+    
+    # Compute case distances based on sampled individuals
+    distances = _compute_case_distances(fitness_matrix, sample_indices, threshold)
+    
+    # Select informative cases using Farthest First Traversal
+    informative_cases = _farthest_first_traversal(distances, actual_downsample_size, rng)
+    
+    # Create submatrix with only informative cases
+    submatrix = fitness_matrix[:, informative_cases]
+    
+    # Perform selection for remaining slots
+    for _ in range(num_selected - elitism):
+        # Shuffle case order for the submatrix
+        case_order = rng.permutation(actual_downsample_size)
+        
+        # Perform lexicase selection on the submatrix
+        candidates = np.arange(n_individuals)
+        
+        # Filter candidates case by case
+        for case_idx in case_order:
+            if len(candidates) <= 1:
+                break
+                
+            case_fitness = submatrix[candidates, case_idx]
+            max_fitness = np.max(case_fitness)
+            
+            # Keep only individuals with maximum fitness on this case
+            best_mask = case_fitness == max_fitness
+            candidates = candidates[best_mask]
+        
+        # Randomly select one from remaining candidates
+        if len(candidates) == 1:
+            selected.append(int(candidates[0]))
+        else:
+            # Multiple candidates remain - select randomly
+            chosen_idx = rng.choice(len(candidates))
+            selected.append(int(candidates[chosen_idx]))
+    
+    return np.array(selected, dtype=int)
