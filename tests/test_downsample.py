@@ -6,24 +6,10 @@ import pytest
 import numpy as np
 from lexicase import downsample_lexicase_selection, lexicase_selection
 
-# Check if JAX is available
-try:
-    import jax
-    JAX_AVAILABLE = True
-except ImportError:
-    JAX_AVAILABLE = False
-
-# Set up backend parameters based on availability
-BACKENDS = ['numpy']
-if JAX_AVAILABLE:
-    BACKENDS.append('jax')
-
 
 def _to_set(arr):
-    """Convert array to set, handling both NumPy and JAX arrays."""
-    if hasattr(arr, 'tolist'):
-        return set(arr.tolist())
-    return set(arr)
+    """Convert array to set."""
+    return set(arr.tolist())
 
 
 class TestDownsampleLexicase:

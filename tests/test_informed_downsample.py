@@ -6,12 +6,6 @@ import numpy as np
 import pytest
 from lexicase import informed_downsample_lexicase_selection, downsample_lexicase_selection
 
-try:
-    import jax.numpy as jnp
-    JAX_AVAILABLE = True
-except ImportError:
-    JAX_AVAILABLE = False
-
 
 class TestInformedDownsample:
     """Test informed downsampled lexicase selection functionality."""
@@ -37,26 +31,7 @@ class TestInformedDownsample:
         
         assert len(selected) == 3
         assert all(0 <= idx < 6 for idx in selected)
-        
-    @pytest.mark.skipif(not JAX_AVAILABLE, reason="JAX not available")
-    def test_basic_functionality_jax(self):
-        """Test that informed downsample works with JAX arrays."""
-        fitness_matrix = jnp.array([
-            [5, 5, 5, 1, 1, 1],
-            [5, 5, 5, 1, 1, 1],
-            [5, 5, 5, 1, 1, 1],
-            [1, 1, 1, 5, 5, 5],
-            [1, 1, 1, 5, 5, 5],
-            [1, 1, 1, 5, 5, 5],
-        ])
-        
-        selected = informed_downsample_lexicase_selection(
-            fitness_matrix, 3, downsample_size=3, seed=42, sample_rate=0.5
-        )
-        
-        assert len(selected) == 3
-        assert all(0 <= idx < 6 for idx in selected)
-        
+
     def test_case_distance_computation(self):
         """Test that case distances are computed correctly."""
         # Create matrix where cases have clear solve patterns
@@ -279,31 +254,3 @@ class TestInformedDownsample:
         
         assert len(selected) == 6
         # Should get a mix of individuals from both groups
-        
-    @pytest.mark.skipif(not JAX_AVAILABLE, reason="JAX not available") 
-    def test_jax_numpy_consistency(self):
-        """Test that JAX and NumPy implementations give consistent results."""
-        fitness_matrix_np = np.array([
-            [1, 2, 3, 4],
-            [4, 3, 2, 1],
-            [2, 4, 1, 3],
-            [3, 1, 4, 2],
-        ])
-        fitness_matrix_jax = jnp.array(fitness_matrix_np)
-        
-        # Same seed should give same selection pattern
-        selected_np = informed_downsample_lexicase_selection(
-            fitness_matrix_np, 2, downsample_size=2, seed=42
-        )
-        selected_jax = informed_downsample_lexicase_selection(
-            fitness_matrix_jax, 2, downsample_size=2, seed=42
-        )
-        
-        # Convert to numpy for comparison
-        selected_jax_np = np.array(selected_jax)
-        
-        # Should have same length
-        assert len(selected_np) == len(selected_jax_np)
-        # Should select from valid range
-        assert all(0 <= idx < 4 for idx in selected_np)
-        assert all(0 <= idx < 4 for idx in selected_jax_np)

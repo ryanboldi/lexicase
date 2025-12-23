@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lexicase"
-version = "0.2.0"
-description = "Fast, vectorized lexicase selection in NumPy and JAX"
+version = "0.3.0"
+description = "Fast, vectorized lexicase selection in NumPy for evolutionary computation"
 readme = "README.md"
-authors = [{name = "Ryan Bahlous-Boldi", email = "your.email@example.com"}]
+authors = [{name = "Ryan Bahlous-Boldi"}]
 license = "MIT"
 requires-python = ">=3.8"
 keywords = ["evolutionary-computation", "genetic-algorithms", "selection", "lexicase"]
@@ -22,7 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-dependencies = []
+dependencies = ["numpy>=1.20.0"]
 
 [project.urls]
 Homepage = "https://github.com/ryanboldi/lexicase"
@@ -30,11 +30,8 @@ Repository = "https://github.com/ryanboldi/lexicase"
 Issues = "https://github.com/ryanboldi/lexicase/issues"
 
 [project.optional-dependencies]
-jax = ["jax", "jaxlib"]
-numpy = ["numpy"]
 dev = ["pytest", "pytest-cov"]
-all = ["jax", "jaxlib", "numpy"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["lexicase*"] 
+include = ["lexicase*"]

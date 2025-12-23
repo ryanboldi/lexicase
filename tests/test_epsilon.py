@@ -6,24 +6,10 @@ import pytest
 import numpy as np
 from lexicase import epsilon_lexicase_selection, lexicase_selection
 
-# Check if JAX is available
-try:
-    import jax
-    JAX_AVAILABLE = True
-except ImportError:
-    JAX_AVAILABLE = False
-
-# Set up backend parameters based on availability
-BACKENDS = ['numpy']
-if JAX_AVAILABLE:
-    BACKENDS.append('jax')
-
 
 def _to_set(arr):
-    """Convert array to set, handling both NumPy and JAX arrays."""
-    if hasattr(arr, 'tolist'):
-        return set(arr.tolist())
-    return set(arr)
+    """Convert array to set."""
+    return set(arr.tolist())
 
 
 class TestEpsilonLexicase:
@@ -320,12 +306,6 @@ class TestEpsilonLexicase:
             f"No individual should dominate: max share = {max_share:.2%}"
 
 
-@pytest.fixture(params=BACKENDS)
-def backend(request):
-    """Test with different backends."""
-    return request.param
-
-
 def test_epsilon_basic_functionality():
     """Test basic epsilon lexicase functionality."""
     fitnesses = np.array([
@@ -514,9 +494,7 @@ def test_epsilon_case_order_independence():
     results = []
     for seed in range(10):
         selected = epsilon_lexicase_selection(fitnesses, num_selected=1, epsilon=0.5, seed=seed)
-        # Convert JAX scalar to Python int for hashing
-        result_val = int(selected[0]) if hasattr(selected[0], 'item') else selected[0]
-        results.append(result_val)
+        results.append(int(selected[0]))
     
     # Should see some variety due to case order differences
     unique_results = set(results)

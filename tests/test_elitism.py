@@ -7,14 +7,8 @@ import pytest
 from lexicase import (
     lexicase_selection,
     epsilon_lexicase_selection,
-    downsample_lexicase_selection
+    downsample_lexicase_selection,
 )
-
-try:
-    import jax.numpy as jnp
-    JAX_AVAILABLE = True
-except ImportError:
-    JAX_AVAILABLE = False
 
 
 class TestElitism:
@@ -24,31 +18,6 @@ class TestElitism:
         """Test that elitism selects best individuals in NumPy."""
         # Create fitness matrix where individuals 8 and 9 are clearly best
         fitness_matrix = np.array([
-            [1, 2, 1, 2, 1],  # Total: 7
-            [2, 1, 2, 1, 2],  # Total: 8
-            [1, 1, 1, 1, 1],  # Total: 5
-            [2, 2, 1, 1, 1],  # Total: 7
-            [1, 1, 2, 2, 1],  # Total: 7
-            [2, 1, 1, 1, 2],  # Total: 7
-            [1, 2, 2, 1, 1],  # Total: 7
-            [2, 2, 2, 1, 1],  # Total: 8
-            [3, 3, 3, 3, 3],  # Total: 15 - Best
-            [3, 3, 3, 3, 2],  # Total: 14 - Second best
-        ])
-        
-        # Select 5 individuals with elitism=2
-        selected = lexicase_selection(fitness_matrix, 5, seed=42, elitism=2)
-        
-        # Check that the top 2 individuals (8 and 9) are always selected
-        assert 8 in selected
-        assert 9 in selected
-        assert len(selected) == 5
-        
-    @pytest.mark.skipif(not JAX_AVAILABLE, reason="JAX not available")
-    def test_lexicase_elitism_jax(self):
-        """Test that elitism selects best individuals in JAX."""
-        # Same test as NumPy but with JAX arrays
-        fitness_matrix = jnp.array([
             [1, 2, 1, 2, 1],  # Total: 7
             [2, 1, 2, 1, 2],  # Total: 8
             [1, 1, 1, 1, 1],  # Total: 5

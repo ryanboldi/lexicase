@@ -10,10 +10,8 @@ from lexicase import lexicase_selection, epsilon_lexicase_selection
 
 
 def _to_set(arr):
-    """Convert array to set, handling both NumPy and JAX arrays."""
-    if hasattr(arr, 'tolist'):
-        return set(arr.tolist())
-    return set(arr)
+    """Convert array to set."""
+    return set(arr.tolist())
 
 
 def test_basic_selection():
@@ -197,9 +195,7 @@ def test_case_order_matters():
     results = []
     for seed in range(10):
         selected = lexicase_selection(fitnesses, num_selected=1, seed=seed)
-        # Convert JAX scalar to Python int for hashing
-        result_val = int(selected[0]) if hasattr(selected[0], 'item') else selected[0]
-        results.append(result_val)
+        results.append(int(selected[0]))
     
     # Should see some variation in results
     unique_results = set(results)  # results is a list of individual indices, not arrays
