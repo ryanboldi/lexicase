@@ -88,3 +88,6 @@ Thumbs.db
 CLAUDE.md
 
 .agent/
+
+# mkdocs build output
+site/

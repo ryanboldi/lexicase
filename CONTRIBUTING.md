@@ -58,6 +58,21 @@ What a new variant needs:
 - Unseeded randomness anywhere in tests, examples, or benchmarks.
 - Performance claims without a script in `benchmarks/` that produces them.
 
+## Docs
+
+The site under `docs/` is mkdocs-material, published to GitHub Pages by
+`.github/workflows/docs.yml` on every push to main.
+
+```bash
+pip install -e ".[docs,jax,torch]"
+mkdocs serve
+```
+
+`mkdocs build --strict` has to pass, which means every public function needs a
+docstring whose parameters are all annotated. A new variant needs a page under
+`docs/variants/` with its paper citation and guidance on when to reach for it,
+plus a row in `docs/variants/index.md` and an entry in the `nav` in `mkdocs.yml`.
+
 ## Style
 
 Flat and legible over clever. Docstrings on the public API, few comments

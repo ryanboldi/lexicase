@@ -12,7 +12,7 @@ This module imports jax. Nothing in the package imports it at load time, so
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Union
 
 import jax
 import jax.numpy as jnp
@@ -21,7 +21,7 @@ from jax import lax
 MIN_EPSILON = 1e-10
 
 
-def sanitize(fitness_matrix):
+def sanitize(fitness_matrix: jax.Array) -> jax.Array:
     """Turn NaN into the worst possible value on its case.
 
     A NaN means the individual loses that case to anyone who scored a number
@@ -99,7 +99,7 @@ def _run_events(fitness, num_events, key, order_fn, epsilon, dynamic_epsilon):
     return jax.vmap(one)(order_keys, tie_keys).astype(jnp.int32)
 
 
-def jax_compute_mad_epsilon(fitness_matrix):
+def jax_compute_mad_epsilon(fitness_matrix: jax.Array) -> jax.Array:
     """Median absolute deviation of each case, floored at MIN_EPSILON."""
     medians = jnp.median(fitness_matrix, axis=0)
     deviations = jnp.abs(fitness_matrix - medians[None, :])
@@ -107,12 +107,12 @@ def jax_compute_mad_epsilon(fitness_matrix):
 
 
 def jax_lexicase_selection(
-    fitness_matrix,
+    fitness_matrix: jax.Array,
     num_selected: int,
-    key,
+    key: jax.Array,
     elitism: int = 0,
-    case_weights=None,
-):
+    case_weights: Optional[jax.Array] = None,
+) -> jax.Array:
     """
     fitness_matrix = sanitize(fitness_matrix)
     JAX lexicase selection.
@@ -150,14 +150,14 @@ def jax_lexicase_selection(
 
 
 def jax_epsilon_lexicase_selection(
-    fitness_matrix,
+    fitness_matrix: jax.Array,
     num_selected: int,
-    epsilon,
-    key,
+    epsilon: Union[float, jax.Array],
+    key: jax.Array,
     elitism: int = 0,
     mode: str = "semi-dynamic",
-    case_weights=None,
-):
+    case_weights: Optional[jax.Array] = None,
+) -> jax.Array:
     """
     JAX epsilon lexicase selection.
 
@@ -217,12 +217,12 @@ def jax_epsilon_lexicase_selection(
 
 
 def jax_downsample_lexicase_selection(
-    fitness_matrix,
+    fitness_matrix: jax.Array,
     num_selected: int,
     downsample_size: int,
-    key,
+    key: jax.Array,
     elitism: int = 0,
-):
+) -> jax.Array:
     """
     JAX downsampled lexicase selection.
 
@@ -305,14 +305,14 @@ def _informative_cases(fitness_matrix, downsample_size, key, sample_rate, thresh
 
 
 def jax_informed_downsample_lexicase_selection(
-    fitness_matrix,
+    fitness_matrix: jax.Array,
     num_selected: int,
     downsample_size: int,
-    key,
+    key: jax.Array,
     sample_rate: float = 0.01,
-    threshold=None,
+    threshold: Optional[Union[float, jax.Array]] = None,
     elitism: int = 0,
-):
+) -> jax.Array:
     """
     JAX informed downsampled lexicase selection.
 
@@ -352,13 +352,13 @@ def jax_informed_downsample_lexicase_selection(
 
 
 def jax_batch_lexicase_selection(
-    fitness_matrix,
+    fitness_matrix: jax.Array,
     num_selected: int,
     batch_size: int,
-    key,
+    key: jax.Array,
     threshold: Optional[float] = None,
     elitism: int = 0,
-):
+) -> jax.Array:
     """
     JAX batch lexicase selection.
 
@@ -404,12 +404,12 @@ def jax_batch_lexicase_selection(
 
 
 def jax_cohort_lexicase_selection(
-    fitness_matrix,
+    fitness_matrix: jax.Array,
     num_selected: int,
     num_cohorts: int,
-    key,
+    key: jax.Array,
     elitism: int = 0,
-):
+) -> jax.Array:
     """
     JAX cohort lexicase selection.
 
@@ -475,13 +475,13 @@ def _split_counts(total, parts):
 
 
 def jax_dalex_selection(
-    fitness_matrix,
+    fitness_matrix: jax.Array,
     num_selected: int,
-    key,
+    key: jax.Array,
     particularity_pressure: float = 20.0,
     relaxed: bool = False,
     elitism: int = 0,
-):
+) -> jax.Array:
     """
     JAX diversely aggregated lexicase selection (DALex).
 
