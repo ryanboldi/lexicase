@@ -292,7 +292,7 @@ If you use this package, cite the software and the informed down-sampling paper:
 
 ```bibtex
 @software{lexicase,
-  title = {lexicase: fast lexicase selection in NumPy and JAX},
+  title = {lexicase: fast lexicase selection in NumPy, JAX, and PyTorch},
   author = {Bahlous-Boldi, Ryan},
   url = {https://github.com/ryanboldi/lexicase},
   version = {0.4.0},

@@ -24,14 +24,23 @@ From loosest to strictest, on a fixed population:
    selection on mean fitness
 2. `dalex_selection` with low particularity pressure, which approaches the same
    thing
-3. `epsilon_lexicase_selection` in `"static"` mode
-4. `epsilon_lexicase_selection` in `"semi-dynamic"` and `"dynamic"` modes
-5. `lexicase_selection`, `plexicase_selection`, and `dalex_selection` with high
+3. `epsilon_lexicase_selection` in `"semi-dynamic"` and `"dynamic"` modes
+4. `lexicase_selection`, `plexicase_selection`, and `dalex_selection` with high
    particularity pressure, which all target the same distribution
 
-`downsample_lexicase_selection` and `cohort_lexicase_selection` are not on this
-axis. They trade evaluation cost for noise in the selection, which usually shows
-up as more diversity rather than less pressure.
+Three methods are not on this axis.
+
+`downsample_lexicase_selection` and `cohort_lexicase_selection` trade evaluation
+cost for noise in the selection, which usually shows up as more diversity rather
+than less pressure.
+
+`epsilon_lexicase_selection` in `"static"` mode is not simply looser or stricter
+than the other two modes. It converts the fitness matrix to pass or fail once per
+call, which both merges individuals that the finer modes would have separated and
+eliminates individuals that fail the population-wide threshold. It can reach
+individuals that plain lexicase cannot, and miss individuals that semi-dynamic
+can. Pick it because you want a pass/fail reading of your cases, not because you
+want a particular amount of pressure.
 
 `examples/08_variant_tour.py` prints the selection share every method gives every
 individual on one small population, which is the fastest way to build intuition

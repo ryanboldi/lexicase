@@ -1,5 +1,5 @@
 cff-version: 1.2.0
-title: "lexicase: fast lexicase selection in NumPy and JAX"
+title: "lexicase: fast lexicase selection in NumPy, JAX, and PyTorch"
 message: "If you use this software, please cite both the software and the informed down-sampling paper below."
 type: software
 authors:
