@@ -18,7 +18,7 @@ CALLS = {
         f, 6, 2, seed=0, **kw
     ),
     "informed": lambda f, **kw: lexicase.informed_downsample_lexicase_selection(
-        f, 6, 2, seed=0, sample_rate=0.5, **kw
+        f, 6, 2, seed=0, sample_rate=0.5, threshold=2.5, **kw
     ),
     "batch": lambda f, **kw: lexicase.batch_lexicase_selection(f, 6, 2, seed=0, **kw),
     "cohort": lambda f, **kw: lexicase.cohort_lexicase_selection(f, 6, 3, seed=0, **kw),

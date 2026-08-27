@@ -152,7 +152,7 @@ the paper, the section, and the algorithm or equation it follows.
 | `lexicase_selection` | Helmuth, Spector, and Matheson (2015) |
 | `epsilon_lexicase_selection` | La Cava, Helmuth, Spector, and Moore (2019), Algorithms 2, 3, and 4 |
 | `downsample_lexicase_selection` | Hernandez, Lalejini, Dolson, and Ofria (2019) |
-| `informed_downsample_lexicase_selection` | Boldi et al. (2024) |
+| `informed_downsample_lexicase_selection`, `informed_downsample_cases` | Boldi et al. (2024), Algorithms 1 and 2 |
 | `batch_lexicase_selection` | Aenugu and Spector (2019), Algorithm 2 |
 | `cohort_lexicase_selection` | Hernandez, Lalejini, Dolson, and Ofria (2019), Section 4 |
 | `plexicase_selection`, `plexicase_probabilities` | Ding, Pantridge, and Spector (2023), Equations 1 to 4 |
@@ -195,7 +195,7 @@ an array of selected indices, with repeats, in the input's backend.
 | `mode` | epsilon | `"static"`, `"semi-dynamic"`, `"dynamic"` |
 | `case_weights` | lexicase, epsilon | Positive weight per case for a non-uniform case order |
 | `downsample_size` | downsample, informed | Cases kept |
-| `sample_rate`, `threshold` | informed | Population fraction used to estimate solve patterns, and the pass or fail cutoff |
+| `sample_rate`, `threshold` | informed | The paper's `rho`, and the pass or fail cutoff. A two-valued matrix is read as pass/fail; anything else needs a cutoff or falls back to a median split. Torch requires it explicitly |
 | `batch_size`, `threshold` | batch | Cases per batch, and the optional absolute survival threshold |
 | `num_cohorts` | cohort | Number of population and case cohorts |
 | `alpha` | plexicase | Temperature on the selection distribution |

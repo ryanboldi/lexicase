@@ -54,7 +54,7 @@ def main():
             fitness, n, 16, seed=SEED
         ),
         "informed downsample": lambda: lx.informed_downsample_lexicase_selection(
-            fitness, n, 16, seed=SEED, sample_rate=0.1
+            fitness, n, 16, seed=SEED, sample_rate=0.1, threshold=0.5
         ),
         "batch": lambda: lx.batch_lexicase_selection(fitness, n, 8, seed=SEED),
         "cohort": lambda: lx.cohort_lexicase_selection(fitness, n, 4, seed=SEED),

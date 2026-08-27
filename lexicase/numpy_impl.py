@@ -341,6 +341,42 @@ def numpy_downsample_lexicase_selection(
     return selected
 
 
+def resolve_pass_threshold(
+    fitness_matrix: ArrayLike,
+    threshold: Optional[Union[float, ArrayLike]] = None,
+) -> Optional[Union[float, ArrayLike]]:
+    """Work out the pass/fail cutoff for informed downsampling.
+
+    Boldi et al. (2024) define case distances over binary solve vectors, so the
+    fitness matrix has to be reduced to "solved" and "not solved" first. When the
+    matrix has at most two distinct values it already is pass/fail, and the cutoff
+    is the midpoint between them. That covers 0/1 fitness and the negated 0/-1
+    errors this package tells you to pass in.
+
+    Anything with more than two distinct values is not pass/fail data, and there
+    is no scale-free way to guess where "solved" begins, so this returns None and
+    the caller falls back to a per-case median split. Pass an explicit threshold
+    when you know your own pass mark.
+
+    Args:
+        fitness_matrix: Array of shape (n_individuals, n_cases)
+        threshold: A caller-supplied cutoff, returned unchanged if it is not None
+
+    Returns:
+        The cutoff to compare against with >, or None to use the median heuristic
+    """
+    if threshold is not None:
+        return threshold
+
+    low = float(fitness_matrix.min())
+    high = float(fitness_matrix.max())
+    if low == high:
+        return low
+    if not bool(((fitness_matrix == low) | (fitness_matrix == high)).all()):
+        return None
+    return (low + high) / 2.0
+
+
 def _compute_case_distances(
     fitness_matrix: NDArray[np.floating],
     sample_indices: NDArray[np.intp],
@@ -349,10 +385,15 @@ def _compute_case_distances(
     """
     Compute pairwise distances between test cases based on solve patterns.
 
+    The distance between two cases is the Hamming distance between their binary
+    solve vectors, following Boldi et al. (2024) Section 3.
+
     Args:
         fitness_matrix: Full fitness matrix (n_individuals, n_cases)
         sample_indices: Indices of individuals to use for distance calculation
-        threshold: Optional threshold for pass/fail. If None, uses median per case.
+        threshold: Threshold for pass/fail. If None, uses median per case, which
+                   is a heuristic for continuous fitness and not the paper's rule.
+                   Callers should resolve it with resolve_pass_threshold first.
 
     Returns:
         Distance matrix of shape (n_cases, n_cases)
@@ -487,6 +528,8 @@ def numpy_informed_downsample_lexicase_selection(
         elite_indices = _select_elites(fitness_matrix, elitism)
         selected[:elitism] = elite_indices
         selection_idx = elitism
+
+    threshold = resolve_pass_threshold(fitness_matrix, threshold)
 
     # Sample individuals for distance calculation
     n_samples = max(1, int(n_individuals * sample_rate))

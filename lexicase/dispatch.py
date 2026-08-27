@@ -400,8 +400,12 @@ def informed_downsample_lexicase_selection(
         downsample_size: Number of cases to keep
         seed: Random seed for reproducibility
         sample_rate: Fraction of the population used to estimate solve patterns
-        threshold: Pass/fail cutoff per case. If None, uses each case's median
-                   over the sampled individuals.
+        threshold: Pass/fail cutoff per case. If None, a matrix with at most two
+                   distinct values is read as pass/fail directly, which is the
+                   paper's own setting, and anything else falls back to a per-case
+                   median split, which is a heuristic rather than the paper's rule.
+                   Pass an explicit cutoff when you know your own pass mark. The
+                   Torch backend never auto-detects, since that needs a host read.
         elitism: Number of best individuals to always include (by total fitness)
         backend: "auto", "numpy", or "jax"
 
@@ -421,12 +425,22 @@ def informed_downsample_lexicase_selection(
     _validate_elitism(elitism, num_selected, array.shape[0])
 
     if resolved == JAX:
+        from .numpy_impl import resolve_pass_threshold
+
         return load_jax_impl().jax_informed_downsample_lexicase_selection(
             array, num_selected, downsample_size, _key(seed), sample_rate,
-            threshold, elitism,
+            resolve_pass_threshold(array, threshold), elitism,
         )
 
     if resolved == TORCH:
+        if threshold is None:
+            raise ValueError(
+                "informed downsampling needs a pass/fail cutoff, and the Torch "
+                "backend will not infer one: reading the values to check would "
+                "synchronize with the host, which is what this backend exists to "
+                "avoid. Pass threshold=0.5 for 0/1 rewards, or your own cutoff. "
+                "The NumPy and JAX backends infer it for you."
+            )
         return load_torch_impl().torch_informed_downsample_lexicase_selection(
             array, num_selected, downsample_size, seed, sample_rate,
             threshold, elitism,
@@ -438,6 +452,90 @@ def informed_downsample_lexicase_selection(
         array, num_selected, downsample_size, _rng(seed), sample_rate,
         threshold, elitism,
     )
+
+
+def informed_downsample_cases(
+    fitness_matrix: ArrayLike,
+    downsample_size: int,
+    seed: Optional[int] = None,
+    sample_rate: float = 0.01,
+    threshold: Optional[Union[float, ArrayLike]] = None,
+    distances: Optional[ArrayLike] = None,
+) -> tuple[NDArray[np.intp], NDArray[np.floating]]:
+    """
+    Pick an informed down-sample of cases, and return the distances behind it.
+
+    This is the case-selection half of informed downsampling on its own, so you
+    can implement the scheduled case distance computation of Boldi et al. (2024)
+    Algorithm 2: recompute the distance matrix every k generations, but re-run
+    the farthest first traversal every generation.
+
+    Runs on the host on every backend, and always returns NumPy arrays.
+
+    Reference:
+        Boldi, R., Briesch, M., Sobania, D., Lalejini, A., Helmuth, T.,
+        Rothlauf, F., Ofria, C., and Spector, L. (2024). Informed Down-Sampled
+        Lexicase Selection: Identifying Productive Training Cases for Efficient
+        Problem Solving. Evolutionary Computation 32(4), 307-337.
+        Algorithms 1 and 2.
+
+    Args:
+        fitness_matrix: Array of shape (n_individuals, n_cases). Higher is better.
+        downsample_size: Number of cases to keep
+        seed: Random seed for reproducibility
+        sample_rate: The paper's rho. Fraction of the population evaluated on
+                     every case to estimate the solve vectors.
+        threshold: Pass/fail cutoff per case. If None, a two-valued matrix is read
+                   as pass/fail directly and anything else falls back to a per-case
+                   median split.
+        distances: A distance matrix from an earlier call, to reuse instead of
+                   recomputing. This is what makes the k schedule possible.
+
+    Returns:
+        (case_indices, distances), both NumPy arrays
+
+    Example:
+        >>> cases, distances = informed_downsample_cases(fitness, 10, seed=0)
+        >>> # next generation, reuse the distances and redraw the sample
+        >>> cases, _ = informed_downsample_cases(
+        ...     fitness, 10, seed=1, distances=distances
+        ... )
+    """
+    from .numpy_impl import (
+        _compute_case_distances,
+        _farthest_first_traversal,
+        resolve_pass_threshold,
+    )
+
+    if is_torch_tensor(fitness_matrix):
+        fitness_matrix = fitness_matrix.detach().cpu()
+    array = validate_fitness_matrix(np.asarray(fitness_matrix))
+
+    if downsample_size <= 0:
+        raise ValueError("Downsample size must be positive")
+    if sample_rate <= 0 or sample_rate > 1:
+        raise ValueError("Sample rate must be between 0 and 1")
+
+    rng = _rng(seed)
+    n_individuals, n_cases = array.shape
+
+    if distances is None:
+        cutoff = resolve_pass_threshold(array, threshold)
+        n_samples = max(1, int(n_individuals * sample_rate))
+        sample_indices = rng.choice(n_individuals, size=n_samples, replace=False)
+        distances = _compute_case_distances(array, sample_indices, cutoff)
+    else:
+        distances = np.asarray(distances)
+        if distances.shape != (n_cases, n_cases):
+            raise ValueError(
+                f"distances must have shape ({n_cases}, {n_cases}), "
+                f"got {distances.shape}"
+            )
+
+    cases = _farthest_first_traversal(
+        distances, min(downsample_size, n_cases), rng
+    )
+    return cases, distances
 
 
 def batch_lexicase_selection(

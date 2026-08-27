@@ -312,6 +312,12 @@ def torch_informed_downsample_lexicase_selection(
     Hamming distances between case solve patterns, then reused for every
     selection event, matching the other backends.
 
+    `threshold` is the pass/fail cutoff. The NumPy and JAX backends detect a
+    pass/fail matrix and set it for you; this one never does, because reading the
+    values would synchronize with the host and this backend exists not to. For
+    0/1 rewards pass `threshold=0.5`. With `threshold=None` you get a per-case
+    median split, which is a heuristic and not the rule in the paper.
+
     Reference:
         Boldi, R., Briesch, M., Sobania, D., Lalejini, A., Helmuth, T.,
         Rothlauf, F., Ofria, C., and Spector, L. (2024). Informed Down-Sampled

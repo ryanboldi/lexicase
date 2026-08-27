@@ -23,6 +23,8 @@ Common parameters:
 
 ::: lexicase.informed_downsample_lexicase_selection
 
+::: lexicase.informed_downsample_cases
+
 ::: lexicase.batch_lexicase_selection
 
 ::: lexicase.cohort_lexicase_selection
@@ -53,6 +55,7 @@ The functions the NumPy backend dispatches to. They take a
     options:
       members:
         - sanitize
+        - resolve_pass_threshold
         - numpy_lexicase_selection
         - numpy_epsilon_lexicase_selection
         - numpy_epsilon_lexicase_selection_with_mad

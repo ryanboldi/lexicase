@@ -320,6 +320,12 @@ def jax_informed_downsample_lexicase_selection(
     Hamming distances between case solve patterns, then reused for every
     selection event, matching the NumPy backend.
 
+    `threshold` is the pass/fail cutoff. Detecting a pass/fail matrix means
+    reading values, which does not trace, so this kernel never auto-detects. The
+    public `lexicase.informed_downsample_lexicase_selection` resolves it for you
+    before calling in; when calling this kernel directly, pass the cutoff or
+    accept the per-case median fallback.
+
     Reference:
         Boldi, R., Briesch, M., Sobania, D., Lalejini, A., Helmuth, T.,
         Rothlauf, F., Ofria, C., and Spector, L. (2024). Informed Down-Sampled

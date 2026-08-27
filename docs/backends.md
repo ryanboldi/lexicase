@@ -124,6 +124,13 @@ Two things do cost one host-to-device copy per call, and only one, outside the
 per-case loop: passing `case_weights`, `epsilon`, or `threshold` as host data.
 Pass them as device tensors to avoid even that.
 
+One call is stricter on Torch than elsewhere.
+[`informed_downsample_lexicase_selection`](variants/informed-downsample.md) needs
+a pass/fail cutoff to build its case solve vectors. NumPy and JAX work it out from
+the matrix; Torch refuses to, because checking means reading values, and raises
+asking for an explicit `threshold`. Pass `threshold=0.5` for 0/1 rewards. A loud
+error beats a silently degenerate down-sample.
+
 [`plexicase_selection`](variants/plexicase.md) is the exception and its docstring
 says so. Finding the Pareto set boundaries needs a data-dependent number of
 candidates, so it runs the NumPy kernel on the host and moves the result back to

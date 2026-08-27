@@ -36,7 +36,7 @@ CALLS = {
         f, n, 2, seed=0, **kw
     ),
     "informed": lambda f, n, **kw: lexicase.informed_downsample_lexicase_selection(
-        f, n, 2, seed=0, sample_rate=0.5, **kw
+        f, n, 2, seed=0, sample_rate=0.5, threshold=2.5, **kw
     ),
     "batch": lambda f, n, **kw: lexicase.batch_lexicase_selection(f, n, 2, seed=0, **kw),
     "cohort": lambda f, n, **kw: lexicase.cohort_lexicase_selection(f, n, 3, seed=0, **kw),
@@ -236,6 +236,21 @@ class TestNoHostSync:
         """Negative control, so a broken monkeypatch cannot make the suite pass."""
         with pytest.raises(AssertionError, match="synchronized with the host"):
             torch.tensor(FITNESS).sum().item()
+
+
+class TestInformedDownsampleThreshold:
+    def test_missing_threshold_is_refused_rather_than_guessed(self):
+        with pytest.raises(ValueError, match="will not infer one"):
+            lexicase.informed_downsample_lexicase_selection(
+                torch.tensor(FITNESS), 6, 2, seed=0, sample_rate=0.5
+            )
+
+    def test_explicit_threshold_works(self):
+        selected = lexicase.informed_downsample_lexicase_selection(
+            torch.tensor(FITNESS), 6, 2, seed=0, sample_rate=0.5, threshold=2.5
+        )
+        assert isinstance(selected, torch.Tensor)
+        assert len(selected) == 6
 
 
 class TestNaNPolicy:

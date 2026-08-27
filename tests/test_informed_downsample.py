@@ -255,3 +255,141 @@ class TestInformedDownsample:
 
         assert len(selected) == 6
         # Should get a mix of individuals from both groups
+
+
+class TestPaperFidelity:
+    """Checks against Boldi et al. (2024), Evolutionary Computation 32(4), 307-337."""
+
+    # Figure 1 of the paper. Rows are individuals I1 to I6, columns are cases c1
+    # to c5. Read down a column to get that case's solve vector S_j.
+    FIGURE_1 = np.array(
+        [
+            [0, 1, 1, 0, 0],
+            [1, 1, 0, 1, 1],
+            [0, 0, 1, 0, 0],
+            [1, 0, 1, 0, 1],
+            [1, 1, 0, 1, 1],
+            [0, 1, 1, 1, 0],
+        ],
+        dtype=float,
+    )
+
+    def distances(self):
+        from lexicase.numpy_impl import _compute_case_distances, resolve_pass_threshold
+
+        cutoff = resolve_pass_threshold(self.FIGURE_1)
+        return _compute_case_distances(self.FIGURE_1, np.arange(6), cutoff)
+
+    def test_reproduces_the_distances_stated_in_the_paper(self):
+        distances = self.distances()
+        # "For example, D(c1, c2) = 3 and D(c2, c3) = 4."
+        assert distances[0, 1] == 3
+        assert distances[1, 2] == 4
+        # "c1 and c5 have identical solve vectors, and therefore are synonymous."
+        assert distances[0, 4] == 0
+
+    def test_distances_are_hamming_on_the_solve_vectors(self):
+        distances = self.distances()
+        solve = self.FIGURE_1
+        n_cases = solve.shape[1]
+        expected = np.array(
+            [
+                [np.abs(solve[:, i] - solve[:, j]).sum() for j in range(n_cases)]
+                for i in range(n_cases)
+            ]
+        )
+        np.testing.assert_array_equal(distances, expected)
+
+    def test_pass_fail_matrix_is_not_split_at_the_median(self):
+        """A case solved by most of the population must not read as solved by none."""
+        from lexicase.numpy_impl import _compute_case_distances, resolve_pass_threshold
+
+        # case 0 solved by 4 of 6, case 1 solved by 2 of 6, case 2 solved by nobody.
+        solve = np.array(
+            [[1, 0, 0], [1, 0, 0], [1, 1, 0], [1, 1, 0], [0, 0, 0], [0, 0, 0]],
+            dtype=float,
+        )
+        cutoff = resolve_pass_threshold(solve)
+        distances = _compute_case_distances(solve, np.arange(6), cutoff)
+        assert distances[0, 2] == 4  # four individuals separate them
+        assert distances[1, 2] == 2
+
+        # The median split records case 0 as solved by nobody, collapsing it onto
+        # case 2. This is what the threshold resolution exists to avoid.
+        median_split = _compute_case_distances(solve, np.arange(6), None)
+        assert median_split[0, 2] == 0
+
+    def test_negated_errors_are_read_as_pass_fail(self):
+        """The package tells you to negate errors, so 0 and -1 has to work too."""
+        from lexicase.numpy_impl import resolve_pass_threshold
+
+        assert resolve_pass_threshold(np.array([[0.0, -1.0], [-1.0, 0.0]])) == -0.5
+        assert resolve_pass_threshold(np.array([[1.0, 0.0], [0.0, 1.0]])) == 0.5
+
+    def test_continuous_fitness_falls_back_to_the_median_heuristic(self):
+        from lexicase.numpy_impl import resolve_pass_threshold
+
+        rng = np.random.default_rng(0)
+        assert resolve_pass_threshold(rng.random((10, 4))) is None
+
+    def test_explicit_threshold_is_never_overridden(self):
+        from lexicase.numpy_impl import resolve_pass_threshold
+
+        assert resolve_pass_threshold(np.array([[1.0, 0.0], [0.0, 1.0]]), 0.25) == 0.25
+
+    def test_all_identical_fitness_makes_every_case_synonymous(self):
+        from lexicase.numpy_impl import _compute_case_distances, resolve_pass_threshold
+
+        flat = np.full((6, 4), 3.0)
+        cutoff = resolve_pass_threshold(flat)
+        distances = _compute_case_distances(flat, np.arange(6), cutoff)
+        assert np.all(distances == 0)
+
+
+class TestInformedDownsampleCases:
+    """The case-selection half on its own, for the paper's k schedule."""
+
+    def test_returns_the_requested_number_of_distinct_cases(self):
+        from lexicase import informed_downsample_cases
+
+        fitness = np.random.default_rng(0).integers(0, 2, (40, 12)).astype(float)
+        cases, distances = informed_downsample_cases(
+            fitness, 5, seed=0, sample_rate=0.25
+        )
+        assert len(cases) == 5
+        assert len(set(cases.tolist())) == 5
+        assert distances.shape == (12, 12)
+
+    def test_reusing_distances_skips_recomputation(self):
+        from lexicase import informed_downsample_cases
+
+        fitness = np.random.default_rng(1).integers(0, 2, (40, 12)).astype(float)
+        _, distances = informed_downsample_cases(fitness, 5, seed=0, sample_rate=0.25)
+        _, reused = informed_downsample_cases(fitness, 5, seed=1, distances=distances)
+        np.testing.assert_array_equal(distances, reused)
+
+    def test_a_fresh_draw_can_give_a_different_downsample(self):
+        from lexicase import informed_downsample_cases
+
+        fitness = np.random.default_rng(2).integers(0, 2, (40, 20)).astype(float)
+        _, distances = informed_downsample_cases(fitness, 4, seed=0, sample_rate=0.25)
+        draws = {
+            tuple(informed_downsample_cases(fitness, 4, seed=s, distances=distances)[0])
+            for s in range(20)
+        }
+        assert len(draws) > 1
+
+    def test_rejects_a_wrong_shaped_distance_matrix(self):
+        from lexicase import informed_downsample_cases
+
+        fitness = np.random.default_rng(3).integers(0, 2, (20, 6)).astype(float)
+        with pytest.raises(ValueError, match="distances must have shape"):
+            informed_downsample_cases(fitness, 3, seed=0, distances=np.zeros((5, 5)))
+
+    def test_is_reproducible(self):
+        from lexicase import informed_downsample_cases
+
+        fitness = np.random.default_rng(4).integers(0, 2, (30, 10)).astype(float)
+        first, _ = informed_downsample_cases(fitness, 4, seed=7, sample_rate=0.3)
+        second, _ = informed_downsample_cases(fitness, 4, seed=7, sample_rate=0.3)
+        np.testing.assert_array_equal(first, second)

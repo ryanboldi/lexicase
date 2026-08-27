@@ -25,6 +25,10 @@ first commit landed on 2025-06-14 and `lexicase` 0.1.0 went to PyPI on
 - `cohort_lexicase_selection`, following Hernandez et al. (2019).
 - `plexicase_selection` and `plexicase_probabilities`, following
   Ding et al. (2023).
+- `informed_downsample_cases`, the case-selection half of informed downsampling
+  on its own, so the scheduled case distance computation of Boldi et al. (2024)
+  Algorithm 2 can be built on top: recompute distances every k generations,
+  re-run the traversal every generation.
 - `dalex_selection`, following Ni et al. (2024).
 - `case_weights` on `lexicase_selection` and `epsilon_lexicase_selection` for
   non-uniform case ordering.
@@ -36,6 +40,18 @@ first commit landed on 2025-06-14 and `lexicase` 0.1.0 went to PyPI on
   `CITATION.cff`, and issue templates.
 
 ### Fixed
+- **Behaviour change.** Informed downsampling built its case solve vectors with a
+  per-case median split, which is not what Boldi et al. (2024) specify and is
+  wrong for the pass/fail data the paper is about. On a genuinely pass/fail
+  matrix a case solved by four individuals out of six was recorded as solved by
+  none, because the median was 1 and the comparison was strictly greater. A
+  matrix with at most two distinct values is now read as pass/fail directly,
+  which reproduces the distances in the paper's Figure 1 exactly. Continuous
+  fitness still falls back to the median split, now documented as a heuristic
+  rather than the paper's rule, and an explicit `threshold` still overrides
+  both. Seeded results move for two-valued inputs and are unchanged elsewhere.
+  The farthest first traversal and the parent sampling rate matched the paper
+  already.
 - Issue #1: importing `lexicase` no longer imports jax, and never did import it
   in 0.3.0 only because the JAX backend had been deleted. Backend detection now
   reads `sys.modules`, so the import stays clean even when jax is installed. A
