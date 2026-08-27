@@ -2,6 +2,9 @@ include README.md
 include LICENSE
 include pyproject.toml
 recursive-include lexicase *.py
+include lexicase/py.typed
+include CHANGELOG.md
+include CITATION.cff
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
 recursive-exclude tests *

@@ -1,0 +1,21 @@
+name: Feature request
+description: A selection method or capability you want added
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What you want
+    validations:
+      required: true
+  - type: input
+    id: paper
+    attributes:
+      label: Paper or reference
+      description: >
+        If this is a published selection method, link the paper. Variants are
+        only added when the algorithm can be checked against its source.
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it belongs here

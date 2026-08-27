@@ -2,11 +2,11 @@
 Lexicase selection for evolutionary computation.
 
 Fast, vectorized implementations of lexicase selection and its variants, with
-a NumPy backend and an optional JAX backend.
+a NumPy backend and optional JAX and Torch backends.
 
-Importing this package never imports jax. Backend choice follows the input
-array type, and can be forced with the backend= argument on every selection
-function.
+Importing this package never imports jax or torch. Backend choice follows the
+input array type, and can be forced with the backend= argument on every
+selection function.
 
 Usage:
     import numpy as np
@@ -16,7 +16,12 @@ Usage:
     selected = lexicase_selection(fitness, num_selected=50, seed=42)
 """
 
-from .backends import is_jax_array, jax_is_available
+from .backends import (
+    is_jax_array,
+    is_torch_tensor,
+    jax_is_available,
+    torch_is_available,
+)
 from .dispatch import (
     batch_lexicase_selection,
     cohort_lexicase_selection,
@@ -41,5 +46,7 @@ __all__ = [
     "plexicase_probabilities",
     "dalex_selection",
     "is_jax_array",
+    "is_torch_tensor",
     "jax_is_available",
+    "torch_is_available",
 ]

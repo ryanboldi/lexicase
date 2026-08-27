@@ -10,11 +10,23 @@ from __future__ import annotations
 from typing import Optional, Union
 
 import numpy as np
-from numpy.typing import NDArray
+from numpy.typing import ArrayLike, NDArray
 
 from .utils import MIN_EPSILON
 
 EPSILON_MODES = ("static", "semi-dynamic", "dynamic")
+
+
+def sanitize(fitness_matrix: ArrayLike) -> NDArray[np.floating]:
+    """Turn NaN into the worst possible value on its case.
+
+    A NaN means the individual loses that case to anyone who scored a number
+    there, and ties with anyone else who is NaN. Infinities are left alone.
+    """
+    array = np.asarray(fitness_matrix)
+    if array.dtype.kind != "f" or not np.isnan(array).any():
+        return array
+    return np.where(np.isnan(array), -np.inf, array)
 
 
 def _select_elites(
@@ -127,6 +139,7 @@ def numpy_lexicase_selection(
     Returns:
         NumPy array of selected individual indices
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return np.array([], dtype=np.intp)
 
@@ -175,6 +188,7 @@ def numpy_epsilon_lexicase_selection(
     Returns:
         NumPy array of selected individual indices
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return np.array([], dtype=np.intp)
 
@@ -294,6 +308,7 @@ def numpy_downsample_lexicase_selection(
     Returns:
         NumPy array of selected individual indices
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return np.array([], dtype=np.intp)
 
@@ -460,6 +475,7 @@ def numpy_informed_downsample_lexicase_selection(
     Returns:
         NumPy array of selected individual indices
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return np.array([], dtype=np.intp)
 
@@ -540,6 +556,7 @@ def numpy_batch_lexicase_selection(
     Returns:
         NumPy array of selected individual indices
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return np.array([], dtype=np.intp)
 
@@ -611,6 +628,7 @@ def numpy_cohort_lexicase_selection(
     Returns:
         NumPy array of selected individual indices
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return np.array([], dtype=np.intp)
 
@@ -784,6 +802,7 @@ def numpy_plexicase_selection(
     Returns:
         NumPy array of selected individual indices
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return np.array([], dtype=np.intp)
 
@@ -822,7 +841,8 @@ def numpy_dalex_selection(
 
     Reference:
         Ni, A., Ding, L., and Spector, L. (2024). DALex: Lexicase-like
-        Selection via Diverse Aggregation. EuroGP 2024. Algorithm 1.
+        Selection via Diverse Aggregation. EuroGP 2024, LNCS 14631,
+        pp. 90-107. Algorithm 1.
 
     Args:
         fitness_matrix: NumPy array of shape (n_individuals, n_cases)
@@ -839,6 +859,7 @@ def numpy_dalex_selection(
     Returns:
         NumPy array of selected individual indices
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return np.array([], dtype=np.intp)
 

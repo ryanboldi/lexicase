@@ -21,6 +21,19 @@ from jax import lax
 MIN_EPSILON = 1e-10
 
 
+def sanitize(fitness_matrix):
+    """Turn NaN into the worst possible value on its case.
+
+    A NaN means the individual loses that case to anyone who scored a number
+    there, and ties with anyone else who is NaN. Infinities are left alone.
+    This is one elementwise pass and stays inside jit.
+    """
+    array = jnp.asarray(fitness_matrix)
+    if not jnp.issubdtype(array.dtype, jnp.floating):
+        return array.astype(jnp.float32)
+    return jnp.where(jnp.isnan(array), -jnp.inf, array)
+
+
 def _random_from_mask(key, mask):
     """Pick one index uniformly at random from the True entries of mask."""
     noise = jax.random.uniform(key, mask.shape)
@@ -101,6 +114,7 @@ def jax_lexicase_selection(
     case_weights=None,
 ):
     """
+    fitness_matrix = sanitize(fitness_matrix)
     JAX lexicase selection.
 
     Jittable with num_selected and elitism static.
@@ -115,6 +129,7 @@ def jax_lexicase_selection(
     Returns:
         JAX int32 array of selected individual indices
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return jnp.array([], dtype=jnp.int32)
 
@@ -165,6 +180,7 @@ def jax_epsilon_lexicase_selection(
     Returns:
         JAX int32 array of selected individual indices
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return jnp.array([], dtype=jnp.int32)
 
@@ -220,6 +236,7 @@ def jax_downsample_lexicase_selection(
 
     Jittable with num_selected, downsample_size, and elitism static.
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return jnp.array([], dtype=jnp.int32)
 
@@ -306,10 +323,12 @@ def jax_informed_downsample_lexicase_selection(
     Reference:
         Boldi, R., Briesch, M., Sobania, D., Lalejini, A., Helmuth, T.,
         Rothlauf, F., Ofria, C., and Spector, L. (2024). Informed Down-Sampled
-        Lexicase Selection. Artificial Life 30(1), 1-30.
+        Lexicase Selection: Identifying Productive Training Cases for Efficient
+        Problem Solving. Evolutionary Computation 32(4), 307-337.
 
     Jittable with num_selected, downsample_size, sample_rate, and elitism static.
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return jnp.array([], dtype=jnp.int32)
 
@@ -351,6 +370,7 @@ def jax_batch_lexicase_selection(
     The batch loop is unrolled at trace time, so very large case counts with a
     small batch size make compilation slow.
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return jnp.array([], dtype=jnp.int32)
 
@@ -400,6 +420,7 @@ def jax_cohort_lexicase_selection(
 
     Jittable with num_selected, num_cohorts, and elitism static.
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return jnp.array([], dtype=jnp.int32)
 
@@ -466,12 +487,14 @@ def jax_dalex_selection(
 
     Reference:
         Ni, A., Ding, L., and Spector, L. (2024). DALex: Lexicase-like
-        Selection via Diverse Aggregation. EuroGP 2024. Algorithm 1.
+        Selection via Diverse Aggregation. EuroGP 2024, LNCS 14631,
+        pp. 90-107. Algorithm 1.
 
     Jittable with num_selected, relaxed, and elitism static. This is the one
     variant that is a single matrix multiply, so it is by far the fastest on
     accelerators.
     """
+    fitness_matrix = sanitize(fitness_matrix)
     if num_selected == 0:
         return jnp.array([], dtype=jnp.int32)
 

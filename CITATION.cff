@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+title: "lexicase: fast lexicase selection in NumPy and JAX"
+message: "If you use this software, please cite both the software and the informed down-sampling paper below."
+type: software
+authors:
+  - given-names: Ryan
+    family-names: Bahlous-Boldi
+repository-code: "https://github.com/ryanboldi/lexicase"
+url: "https://github.com/ryanboldi/lexicase"
+license: MIT
+version: 0.4.0
+keywords:
+  - lexicase selection
+  - evolutionary computation
+  - genetic programming
+  - parent selection
+preferred-citation:
+  type: article
+  title: "Informed Down-Sampled Lexicase Selection: Identifying Productive Training Cases for Efficient Problem Solving"
+  authors:
+    - given-names: Ryan
+      family-names: Boldi
+    - given-names: Martin
+      family-names: Briesch
+    - given-names: Dominik
+      family-names: Sobania
+    - given-names: Alexander
+      family-names: Lalejini
+    - given-names: Thomas
+      family-names: Helmuth
+    - given-names: Franz
+      family-names: Rothlauf
+    - given-names: Charles
+      family-names: Ofria
+    - given-names: Lee
+      family-names: Spector
+  journal: "Evolutionary Computation"
+  volume: 32
+  issue: 4
+  start: 307
+  end: 337
+  year: 2024
+  doi: "10.1162/evco_a_00346"

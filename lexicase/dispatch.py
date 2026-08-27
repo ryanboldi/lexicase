@@ -16,7 +16,15 @@ from typing import Optional, Union
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from .backends import JAX, is_jax_array, load_jax_impl, resolve_backend
+from .backends import (
+    JAX,
+    TORCH,
+    is_jax_array,
+    is_torch_tensor,
+    load_jax_impl,
+    load_torch_impl,
+    resolve_backend,
+)
 from .utils import validate_fitness_matrix, validate_selection_params
 
 EPSILON_MODES = ("static", "semi-dynamic", "dynamic")
@@ -41,6 +49,17 @@ def _validate_elitism(elitism: int, num_selected: int, n_individuals: int) -> No
         raise ValueError("Elitism cannot exceed number of individuals")
 
 
+def _validate_shape(array) -> None:
+    if array.ndim != 2:
+        raise ValueError(
+            f"Fitness matrix must be 2-dimensional, got {array.ndim}-dimensional"
+        )
+    if array.shape[0] == 0:
+        raise ValueError("Fitness matrix must have at least one individual")
+    if array.shape[1] == 0:
+        raise ValueError("Fitness matrix must have at least one test case")
+
+
 def _prepare(fitness_matrix, num_selected, seed, backend):
     """Validate inputs and resolve the backend.
 
@@ -51,22 +70,17 @@ def _prepare(fitness_matrix, num_selected, seed, backend):
     resolved = resolve_backend(backend, fitness_matrix)
 
     if resolved == JAX:
-        jax_impl = load_jax_impl()
-        array = jax_impl.jnp.asarray(fitness_matrix)
-        if array.ndim != 2:
-            raise ValueError(
-                f"Fitness matrix must be 2-dimensional, got {array.ndim}-dimensional"
-            )
-        if array.shape[0] == 0:
-            raise ValueError("Fitness matrix must have at least one individual")
-        if array.shape[1] == 0:
-            raise ValueError("Fitness matrix must have at least one test case")
+        array = load_jax_impl().jnp.asarray(fitness_matrix)
+        _validate_shape(array)
+    elif resolved == TORCH:
+        array = load_torch_impl().torch.as_tensor(fitness_matrix)
+        _validate_shape(array)
     else:
         array = validate_fitness_matrix(fitness_matrix)
 
     if num_selected < 0:
         raise ValueError("Number of selected individuals must be non-negative")
-    if seed is not None and not is_jax_array(seed):
+    if seed is not None and not is_jax_array(seed) and not is_torch_tensor(seed):
         validate_selection_params(num_selected, seed)
 
     return array, resolved
@@ -86,9 +100,21 @@ def _key(seed):
     return jax_impl.jax.random.PRNGKey(int(seed))
 
 
+def _on_device(value) -> bool:
+    """True for a value already living on an accelerator, which must not be read."""
+    return is_jax_array(value) or is_torch_tensor(value)
+
+
 def _validate_case_weights(case_weights, n_cases):
     if case_weights is None:
         return None
+    if _on_device(case_weights):
+        if tuple(case_weights.shape) != (n_cases,):
+            raise ValueError(
+                f"case_weights must have length {n_cases}, "
+                f"got shape {tuple(case_weights.shape)}"
+            )
+        return case_weights
     weights = np.asarray(case_weights, dtype=np.float64)
     if weights.shape != (n_cases,):
         raise ValueError(
@@ -100,23 +126,37 @@ def _validate_case_weights(case_weights, n_cases):
 
 
 def _validate_epsilon(epsilon, n_cases):
+    if _on_device(epsilon):
+        if epsilon.ndim > 0 and epsilon.shape[0] != n_cases:
+            raise ValueError(
+                f"Epsilon array length ({epsilon.shape[0]}) must match "
+                f"number of cases ({n_cases})"
+            )
+        return epsilon
     epsilon_array = np.asarray(epsilon)
     if epsilon_array.ndim > 0 and len(epsilon_array) != n_cases:
         raise ValueError(
-            f"Epsilon array length ({len(epsilon_array)}) must match "
+            f"Epsilon array length ({epsilon_array.shape[0]}) must match "
             f"number of cases ({n_cases})"
         )
     if np.any(epsilon_array < 0):
         if epsilon_array.ndim == 0:
             raise ValueError("Epsilon must be non-negative")
         raise ValueError("All epsilon values must be non-negative")
+    if epsilon_array.ndim == 0:
+        return float(epsilon_array)
     return epsilon_array
 
 
 def _as_jax(indices):
     """Move a NumPy result onto the JAX backend."""
-    jax_impl = load_jax_impl()
-    return jax_impl.jnp.asarray(indices)
+    return load_jax_impl().jnp.asarray(indices)
+
+
+def _as_torch(indices, like):
+    """Move a NumPy result back onto the device of the input tensor."""
+    torch = load_torch_impl().torch
+    return torch.as_tensor(np.ascontiguousarray(indices), dtype=torch.long).to(like.device)
 
 
 def lexicase_selection(
@@ -163,6 +203,11 @@ def lexicase_selection(
     if resolved == JAX:
         return load_jax_impl().jax_lexicase_selection(
             array, num_selected, _key(seed), elitism, weights
+        )
+
+    if resolved == TORCH:
+        return load_torch_impl().torch_lexicase_selection(
+            array, num_selected, seed, elitism, weights
         )
 
     from .numpy_impl import numpy_lexicase_selection
@@ -242,6 +287,17 @@ def epsilon_lexicase_selection(
             array, num_selected, tolerance, _key(seed), elitism, mode, weights
         )
 
+    if resolved == TORCH:
+        torch_impl = load_torch_impl()
+        tolerance = (
+            torch_impl.torch_compute_mad_epsilon(array) if epsilon is None else epsilon
+        )
+        if mode == "dynamic":
+            tolerance = 0.0
+        return torch_impl.torch_epsilon_lexicase_selection(
+            array, num_selected, tolerance, seed, elitism, mode, weights
+        )
+
     rng = _rng(seed)
     if epsilon is None:
         from .numpy_impl import numpy_epsilon_lexicase_selection_with_mad
@@ -302,6 +358,11 @@ def downsample_lexicase_selection(
             array, num_selected, downsample_size, _key(seed), elitism
         )
 
+    if resolved == TORCH:
+        return load_torch_impl().torch_downsample_lexicase_selection(
+            array, num_selected, downsample_size, seed, elitism
+        )
+
     from .numpy_impl import numpy_downsample_lexicase_selection
 
     return numpy_downsample_lexicase_selection(
@@ -330,7 +391,8 @@ def informed_downsample_lexicase_selection(
     Reference:
         Boldi, R., Briesch, M., Sobania, D., Lalejini, A., Helmuth, T.,
         Rothlauf, F., Ofria, C., and Spector, L. (2024). Informed Down-Sampled
-        Lexicase Selection. Artificial Life 30(1), 1-30.
+        Lexicase Selection: Identifying Productive Training Cases for Efficient
+        Problem Solving. Evolutionary Computation 32(4), 307-337.
 
     Args:
         fitness_matrix: Array of shape (n_individuals, n_cases). Higher is better.
@@ -361,6 +423,12 @@ def informed_downsample_lexicase_selection(
     if resolved == JAX:
         return load_jax_impl().jax_informed_downsample_lexicase_selection(
             array, num_selected, downsample_size, _key(seed), sample_rate,
+            threshold, elitism,
+        )
+
+    if resolved == TORCH:
+        return load_torch_impl().torch_informed_downsample_lexicase_selection(
+            array, num_selected, downsample_size, seed, sample_rate,
             threshold, elitism,
         )
 
@@ -424,6 +492,11 @@ def batch_lexicase_selection(
             array, num_selected, batch_size, _key(seed), threshold, elitism
         )
 
+    if resolved == TORCH:
+        return load_torch_impl().torch_batch_lexicase_selection(
+            array, num_selected, batch_size, seed, threshold, elitism
+        )
+
     from .numpy_impl import numpy_batch_lexicase_selection
 
     return numpy_batch_lexicase_selection(
@@ -482,6 +555,11 @@ def cohort_lexicase_selection(
             array, num_selected, num_cohorts, _key(seed), elitism
         )
 
+    if resolved == TORCH:
+        return load_torch_impl().torch_cohort_lexicase_selection(
+            array, num_selected, num_cohorts, seed, elitism
+        )
+
     from .numpy_impl import numpy_cohort_lexicase_selection
 
     return numpy_cohort_lexicase_selection(
@@ -505,8 +583,12 @@ def plexicase_selection(
     once, then draws all parents from it. Individuals outside the Pareto set
     boundaries get probability zero.
 
-    There is no native JAX kernel for this one. With a JAX array in, the NumPy
-    kernel runs on the host and the result is moved back to a JAX array.
+    There is no native JAX or Torch kernel for this one. Finding the Pareto set
+    boundaries needs a data-dependent number of candidates, which cannot be done
+    without leaving the accelerator. With a JAX array or a Torch tensor in, the
+    NumPy kernel runs on the host and the result is moved back to the input's
+    backend and device. That means this function does synchronize, so it is the
+    one selection method here that does not belong in a GPU inner loop.
 
     Reference:
         Ding, L., Pantridge, E., and Spector, L. (2023). Probabilistic Lexicase
@@ -537,11 +619,15 @@ def plexicase_selection(
 
     from .numpy_impl import numpy_plexicase_selection
 
-    host = np.asarray(array)
+    host = np.asarray(array.cpu() if resolved == TORCH else array)
     selected = numpy_plexicase_selection(
         host, num_selected, _rng(seed), alpha, epsilon, elitism
     )
-    return _as_jax(selected) if resolved == JAX else selected
+    if resolved == JAX:
+        return _as_jax(selected)
+    if resolved == TORCH:
+        return _as_torch(selected, array)
+    return selected
 
 
 def plexicase_probabilities(
@@ -567,6 +653,8 @@ def plexicase_probabilities(
     Returns:
         NumPy array of length n_individuals summing to 1
     """
+    if is_torch_tensor(fitness_matrix):
+        fitness_matrix = fitness_matrix.detach().cpu()
     array = validate_fitness_matrix(np.asarray(fitness_matrix))
     if epsilon is not None:
         epsilon = _validate_epsilon(epsilon, array.shape[1])
@@ -595,7 +683,7 @@ def dalex_selection(
 
     Reference:
         Ni, A., Ding, L., and Spector, L. (2024). DALex: Lexicase-like Selection
-        via Diverse Aggregation. EuroGP 2024. Algorithm 1.
+        via Diverse Aggregation. EuroGP 2024, LNCS 14631, pp. 90-107. Algorithm 1.
 
     Args:
         fitness_matrix: Array of shape (n_individuals, n_cases). Higher is better.
@@ -626,6 +714,11 @@ def dalex_selection(
     if resolved == JAX:
         return load_jax_impl().jax_dalex_selection(
             array, num_selected, _key(seed), particularity_pressure, relaxed, elitism
+        )
+
+    if resolved == TORCH:
+        return load_torch_impl().torch_dalex_selection(
+            array, num_selected, seed, particularity_pressure, relaxed, elitism
         )
 
     from .numpy_impl import numpy_dalex_selection
