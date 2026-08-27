@@ -1,0 +1,35 @@
+name: Bug report
+description: Something in lexicase does not behave as documented
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you expected, and what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: >
+        The smallest script that shows the problem. Include the fitness matrix
+        (or how it is generated) and the seed, since selection is random without one.
+      render: python
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: lexicase version
+      placeholder: "0.4.0, or a commit hash"
+    validations:
+      required: true
+  - type: input
+    id: backend
+    attributes:
+      label: Backend and versions
+      placeholder: "numpy 2.1.0, jax 0.4.35 on CPU, Python 3.12"
+    validations:
+      required: true

@@ -5,20 +5,16 @@ Tests boundary conditions, unusual inputs, and numerical edge cases.
 """
 
 import numpy as np
-import pytest
+
 from lexicase import (
-    lexicase_selection,
-    epsilon_lexicase_selection,
     downsample_lexicase_selection,
     informed_downsample_lexicase_selection,
+    lexicase_selection,
 )
 from lexicase.numpy_impl import (
-    numpy_lexicase_selection,
-    numpy_epsilon_lexicase_selection,
-    numpy_downsample_lexicase_selection,
     numpy_compute_mad_epsilon,
+    numpy_epsilon_lexicase_selection,
 )
-
 
 # =============================================================================
 # Numerical Edge Cases
