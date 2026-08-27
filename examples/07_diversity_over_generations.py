@@ -1,4 +1,4 @@
-"""Population diversity over generations under lexicase, downsampled lexicase, and tournament."""
+"""Diversity over generations under lexicase, downsampled lexicase, and tournament, with a plot."""
 
 import sys
 from pathlib import Path
@@ -12,34 +12,35 @@ import numpy as np  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from baselines import tournament_selection  # noqa: E402
-
 from lexicase import downsample_lexicase_selection, lexicase_selection  # noqa: E402
 
-N_CASES = 60
+N_CASES = 150
 POP_SIZE = 60
 GENERATIONS = 60
-N_RUNS = 10
+N_RUNS = 8
 OUTPUT = Path(__file__).parent / "diversity_over_generations.png"
 
 
-def behavioural_diversity(population):
-    """Fraction of the population that has a distinct pass/fail signature."""
-    return len(np.unique(population, axis=0)) / len(population)
+def diversity(population):
+    """Mean pairwise Hamming distance, normalized. Zero once every genome agrees."""
+    frequency = population.mean(axis=0)
+    return float(np.mean(2 * frequency * (1 - frequency)))
 
 
 def run(select, seed):
     rng = np.random.default_rng(seed)
     population = (rng.random((POP_SIZE, N_CASES)) < 0.5).astype(np.int8)
-    curve = []
+    diversities, best = [], []
 
     for generation in range(GENERATIONS):
-        curve.append(behavioural_diversity(population))
+        diversities.append(diversity(population))
+        best.append(population.sum(axis=1).max() / N_CASES)
         parents = select(population.astype(float), POP_SIZE, seed * 1000 + generation)
         mothers = population[parents]
         fathers = population[rng.permutation(parents)]
         population = np.where(rng.random((POP_SIZE, N_CASES)) < 0.5, mothers, fathers)
 
-    return np.array(curve)
+    return np.array(diversities), np.array(best)
 
 
 def main():
@@ -53,22 +54,28 @@ def main():
         ),
     }
 
-    figure, axes = plt.subplots(figsize=(7, 4.5))
-    for name, select in methods.items():
-        curves = np.stack([run(select, seed) for seed in range(N_RUNS)])
-        mean = curves.mean(axis=0)
-        spread = curves.std(axis=0)
-        generations = np.arange(GENERATIONS)
-        axes.plot(generations, mean, label=name)
-        axes.fill_between(generations, mean - spread, mean + spread, alpha=0.15)
-        print(f"{name:22s} diversity at gen 0 {mean[0]:.2f}, at gen "
-              f"{GENERATIONS - 1} {mean[-1]:.2f}")
+    figure, (top, bottom) = plt.subplots(2, 1, figsize=(7, 6.5), sharex=True)
+    generations = np.arange(GENERATIONS)
 
-    axes.set_xlabel("generation")
-    axes.set_ylabel("fraction of distinct behaviours")
-    axes.set_title(f"Behavioural diversity, mean and standard deviation over {N_RUNS} runs")
-    axes.set_ylim(0, 1.05)
-    axes.legend()
+    for name, select in methods.items():
+        runs = [run(select, seed) for seed in range(N_RUNS)]
+        diversities = np.stack([curve for curve, _ in runs])
+        best = np.stack([curve for _, curve in runs])
+
+        mean, spread = diversities.mean(axis=0), diversities.std(axis=0)
+        top.plot(generations, mean, label=name)
+        top.fill_between(generations, mean - spread, mean + spread, alpha=0.15)
+        bottom.plot(generations, best.mean(axis=0), label=name)
+
+        print(f"{name:22s} diversity gen 0 {mean[0]:.3f}, gen 10 {mean[10]:.3f}, "
+              f"gen 20 {mean[20]:.3f}, gen {GENERATIONS - 1} {mean[-1]:.3f}   "
+              f"best cases passed at the end {best.mean(axis=0)[-1]:.2f}")
+
+    top.set_ylabel("mean pairwise Hamming distance")
+    top.set_title(f"{N_CASES} cases, population {POP_SIZE}, {N_RUNS} runs")
+    top.legend()
+    bottom.set_xlabel("generation")
+    bottom.set_ylabel("best fraction of cases passed")
     figure.tight_layout()
     figure.savefig(OUTPUT, dpi=140)
     print()

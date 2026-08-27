@@ -68,10 +68,10 @@ def main():
         "  uniform downsample  "
         f"{downsample_lexicase_selection(fitness, 6, DOWNSAMPLE_SIZE, seed=SEED)}"
     )
-    print(
-        "  informed downsample "
-        f"{informed_downsample_lexicase_selection(fitness, 6, DOWNSAMPLE_SIZE, seed=SEED, sample_rate=SAMPLE_RATE)}"
+    informed = informed_downsample_lexicase_selection(
+        fitness, 6, DOWNSAMPLE_SIZE, seed=SEED, sample_rate=SAMPLE_RATE
     )
+    print(f"  informed downsample {informed}")
 
 
 if __name__ == "__main__":

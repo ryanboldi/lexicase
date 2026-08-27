@@ -8,7 +8,6 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from baselines import tournament_selection  # noqa: E402
-
 from lexicase import lexicase_selection  # noqa: E402
 
 N_CASES = 80
