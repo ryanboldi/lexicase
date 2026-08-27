@@ -55,7 +55,6 @@ examples = ["matplotlib"]
 docs = [
     "mkdocs-material>=9.5",
     "mkdocstrings[python]>=0.24",
-    "mkdocs-gen-files>=0.5",
 ]
 
 [tool.setuptools.packages.find]
