@@ -31,7 +31,8 @@ first commit landed on 2025-06-14 and `lexicase` 0.1.0 went to PyPI on
 - `py.typed`, so type checkers see the annotations.
 - GitHub Actions CI: pytest on Python 3.9 to 3.13, numpy-only and numpy+jax,
   plus a ruff lint job.
-- `examples/` with runnable scripts, `benchmarks/bench.py`, `CONTRIBUTING.md`,
+- `examples/` with runnable scripts, `benchmarks/bench.py`,
+  `benchmarks/bench_jax_vs_numpy.py` and the chart it draws, `CONTRIBUTING.md`,
   `CITATION.cff`, and issue templates.
 
 ### Fixed
@@ -49,6 +50,13 @@ first commit landed on 2025-06-14 and `lexicase` 0.1.0 went to PyPI on
 ### Changed
 - `requires-python` raised to >=3.9.
 - Keywords and classifiers updated.
+- Workflow tokens are scoped per job. `pages: write` and `id-token: write` now
+  sit on the docs deploy job instead of the whole workflow, so the build job that
+  runs PR code holds a read-only token. CI declares `contents: read` explicitly
+  rather than inheriting the repository default.
+- `benchmarks/bench.py` records the OS and architecture instead of the exact
+  kernel build string, so pasting its output somewhere public does not fingerprint
+  the machine that ran it.
 
 ## [0.3.0] - 2025-12-23
 

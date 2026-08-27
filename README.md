@@ -221,7 +221,7 @@ many parents as there are individuals, from a fitness matrix of integers in
 
 ```
 cpu: AMD Ryzen 7 9800X3D 8-Core Processor
-os: Linux 6.12.10-76061203-generic
+os: Linux x86_64
 python: 3.12.11
 numpy: 2.5.2
 jax: 0.11.1 on NVIDIA GeForce RTX 5080
@@ -232,21 +232,67 @@ torch: 2.11.0+cu128 on NVIDIA GeForce RTX 5080
 
 | method | numpy | jax (cpu) | jax (gpu) | torch (cpu) | torch (cuda) |
 |---|---|---|---|---|---|
-| lexicase | 19.4 | 116.1 | 85.1 | 118.3 | **9.3** |
-| epsilon (MAD) | 42.9 | 94.5 | 60.2 | 109.0 | **10.0** |
-| downsample 10% | 20.7 | 45.6 | 82.5 | 15.0 | **1.0** |
-| plexicase | 66.8 | 66.8 | 65.7 | 65.9 | 65.8 |
-| dalex | 3.4 | 1.4 | 0.5 | 1.1 | **0.1** |
+| lexicase | 19.2 | 113.7 | 85.4 | 110.4 | **9.3** |
+| epsilon (MAD) | 41.8 | 99.1 | 61.3 | 122.4 | **10.0** |
+| downsample 10% | 20.9 | 50.0 | 89.8 | 15.4 | **1.0** |
+| plexicase | 65.3 | 65.3 | 64.7 | 64.8 | 65.2 |
+| dalex | 3.8 | 1.4 | 0.6 | 1.5 | **0.1** |
 
 2000 individuals, 500 cases:
 
 | method | numpy | jax (cpu) | jax (gpu) | torch (cpu) | torch (cuda) |
 |---|---|---|---|---|---|
-| lexicase | **55.5** | 788.3 | 112.8 | 1514.0 | 88.3 |
-| epsilon (MAD) | **124.0** | 614.7 | 113.9 | 981.9 | 90.7 |
-| downsample 10% | 56.1 | 117.5 | 81.4 | 192.9 | **8.9** |
-| plexicase | **559.7** | 562.9 | 571.0 | 576.7 | 565.5 |
-| dalex | 28.0 | 4.9 | 0.5 | 6.5 | **0.2** |
+| lexicase | **56.5** | 792.3 | 113.5 | 1612.0 | 88.3 |
+| epsilon (MAD) | 122.6 | 626.3 | 112.5 | 1635.2 | **90.7** |
+| downsample 10% | 56.4 | 120.1 | 81.1 | 176.1 | **9.0** |
+| plexicase | 577.3 | 582.1 | 581.4 | 581.0 | 569.9 |
+| dalex | 27.3 | 4.9 | 1.0 | 10.8 | **0.2** |
+
+### NumPy against JAX
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/jax_vs_numpy_dark.png">
+  <img alt="Four log-scale panels, one per selection method, plotting milliseconds per call against problem size for numpy, jax on CPU, and jax on GPU. NumPy is fastest on lexicase, epsilon lexicase, and downsampling at every size tested. JAX on GPU is fastest on DALex from 500 individuals upward, reaching 0.52 ms against NumPy's 30 ms at 2000 by 500." src="docs/assets/jax_vs_numpy_light.png">
+</picture>
+
+`benchmarks/bench_jax_vs_numpy.py` produces that chart and
+`benchmarks/results_jax_vs_numpy.md`, on the machine listed above. Median of 5
+timed calls after one warmup call that pays for compilation.
+
+The result is not the one you would guess. **JAX does not beat NumPy on the
+filtering variants at any size tested here**, on CPU or GPU. It wins on DALex,
+and it wins hard.
+
+| method | NumPy at 2000 x 500 | best JAX at 2000 x 500 | speedup |
+|---|---|---|---|
+| lexicase | 56.2 ms | 116.0 ms (gpu) | 0.48x |
+| epsilon (MAD) | 124.9 ms | 114.0 ms (gpu) | 1.10x |
+| downsample 10% | 56.6 ms | 83.4 ms (gpu) | 0.68x |
+| dalex | 30.0 ms | 0.52 ms (gpu) | **57x** |
+
+Two things drive that:
+
+- **The NumPy kernel gets to quit early.** It filters one selection event at a
+  time and stops the moment a single candidate is left, which on a matrix with
+  ties usually happens after a handful of cases. The JAX kernel batches every
+  event and walks all the cases, because checking whether to stop means reading a
+  traced value, which `jit` will not allow. On a 500-case matrix that is a large
+  constant factor to give away.
+- **DALex has no filtering loop at all.** It is one softmax and one matrix
+  multiply, which is exactly the shape of work an accelerator is built for. Its
+  GPU time barely moves from 100 individuals to 2000, while NumPy's grows by a
+  factor of 375.
+
+The crossover is visible in the chart: the JAX GPU lines are close to flat across
+the whole sweep, because at these sizes JAX is paying dispatch overhead rather
+than doing arithmetic. Nothing here says JAX is slow. It says
+this workload is a sequential filter, and a sequential filter is the one thing a
+vectorized backend cannot speed up.
+
+**Use the JAX backend when** you want selection inside a jitted training loop,
+when you are `vmap`ping many populations at once, or when you are using DALex.
+**Use NumPy when** you are calling selection once per generation from ordinary
+Python, which is most of the time.
 
 `benchmarks/results.md` has all four sizes. Reading it:
 

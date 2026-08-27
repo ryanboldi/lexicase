@@ -84,7 +84,7 @@ def cpu_name():
 def versions():
     lines = [
         f"cpu: {cpu_name()}",
-        f"os: {platform.system()} {platform.release()}",
+        f"os: {platform.system()} {platform.machine()}",
         f"python: {platform.python_version()}",
         f"numpy: {np.__version__}",
     ]

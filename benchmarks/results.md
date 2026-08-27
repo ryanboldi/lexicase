@@ -4,7 +4,7 @@ Milliseconds per call, median of 3 timed calls after one warmup call. Each call 
 
 ```
 cpu: AMD Ryzen 7 9800X3D 8-Core Processor
-os: Linux 6.12.10-76061203-generic
+os: Linux x86_64
 python: 3.12.11
 numpy: 2.5.2
 jax: 0.11.1 on NVIDIA GeForce RTX 5080
@@ -15,41 +15,41 @@ torch: 2.11.0+cu128 on NVIDIA GeForce RTX 5080
 
 | method | numpy | jax (cpu) | jax (gpu) | torch (cpu) | torch (cuda) |
 |---|---|---|---|---|---|
-| lexicase | 1.0 | 36.0 | 52.1 | 1.6 | 2.0 |
-| epsilon (MAD) | 2.3 | 36.3 | 47.0 | 2.0 | 2.2 |
-| downsample 10% | 1.3 | 35.8 | 53.9 | 0.3 | 0.3 |
-| plexicase | 0.5 | 0.7 | 0.6 | 0.5 | 0.5 |
-| dalex | 0.1 | 0.5 | 0.5 | 0.1 | 0.1 |
+| lexicase | 1.0 | 34.5 | 53.7 | 1.7 | 2.0 |
+| epsilon (MAD) | 2.3 | 37.1 | 49.5 | 2.6 | 2.2 |
+| downsample 10% | 1.3 | 35.0 | 55.3 | 0.4 | 0.3 |
+| plexicase | 0.5 | 0.7 | 0.7 | 0.5 | 0.5 |
+| dalex | 0.1 | 0.5 | 0.7 | 0.1 | 0.1 |
 
 ## 500 individuals, 100 cases
 
 | method | numpy | jax (cpu) | jax (gpu) | torch (cpu) | torch (cuda) |
 |---|---|---|---|---|---|
-| lexicase | 7.2 | 58.4 | 92.7 | 20.0 | 3.9 |
-| epsilon (MAD) | 15.8 | 52.6 | 52.9 | 18.7 | 4.4 |
-| downsample 10% | 8.3 | 43.1 | 91.7 | 3.6 | 0.6 |
-| plexicase | 13.1 | 13.0 | 13.1 | 12.9 | 12.9 |
-| dalex | 0.8 | 0.7 | 0.6 | 0.3 | 0.1 |
+| lexicase | 7.4 | 53.3 | 91.5 | 15.0 | 4.0 |
+| epsilon (MAD) | 15.5 | 51.8 | 54.6 | 15.9 | 4.4 |
+| downsample 10% | 8.1 | 44.4 | 92.5 | 2.8 | 0.5 |
+| plexicase | 12.8 | 13.4 | 13.5 | 13.2 | 13.1 |
+| dalex | 0.8 | 0.9 | 0.5 | 0.3 | 0.1 |
 
 ## 1000 individuals, 200 cases
 
 | method | numpy | jax (cpu) | jax (gpu) | torch (cpu) | torch (cuda) |
 |---|---|---|---|---|---|
-| lexicase | 19.4 | 116.1 | 85.1 | 118.3 | 9.3 |
-| epsilon (MAD) | 42.9 | 94.5 | 60.2 | 109.0 | 10.0 |
-| downsample 10% | 20.7 | 45.6 | 82.5 | 15.0 | 1.0 |
-| plexicase | 66.8 | 66.8 | 65.7 | 65.9 | 65.8 |
-| dalex | 3.4 | 1.4 | 0.5 | 1.1 | 0.1 |
+| lexicase | 19.2 | 113.7 | 85.4 | 110.4 | 9.3 |
+| epsilon (MAD) | 41.8 | 99.1 | 61.3 | 122.4 | 10.0 |
+| downsample 10% | 20.9 | 50.0 | 89.8 | 15.4 | 1.0 |
+| plexicase | 65.3 | 65.3 | 64.7 | 64.8 | 65.2 |
+| dalex | 3.8 | 1.4 | 0.6 | 1.5 | 0.1 |
 
 ## 2000 individuals, 500 cases
 
 | method | numpy | jax (cpu) | jax (gpu) | torch (cpu) | torch (cuda) |
 |---|---|---|---|---|---|
-| lexicase | 55.5 | 788.3 | 112.8 | 1514.0 | 88.3 |
-| epsilon (MAD) | 124.0 | 614.7 | 113.9 | 981.9 | 90.7 |
-| downsample 10% | 56.1 | 117.5 | 81.4 | 192.9 | 8.9 |
-| plexicase | 559.7 | 562.9 | 571.0 | 576.7 | 565.5 |
-| dalex | 28.0 | 4.9 | 0.5 | 6.5 | 0.2 |
+| lexicase | 56.5 | 792.3 | 113.5 | 1612.0 | 88.3 |
+| epsilon (MAD) | 122.6 | 626.3 | 112.5 | 1635.2 | 90.7 |
+| downsample 10% | 56.4 | 120.1 | 81.1 | 176.1 | 9.0 |
+| plexicase | 577.3 | 582.1 | 581.4 | 581.0 | 569.9 |
+| dalex | 27.3 | 4.9 | 1.0 | 10.8 | 0.2 |
 
 Notes:
 
