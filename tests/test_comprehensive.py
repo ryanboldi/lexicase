@@ -14,22 +14,21 @@ import pytest
 # Import the main API
 import lexicase
 from lexicase import (
-    lexicase_selection,
-    epsilon_lexicase_selection,
     downsample_lexicase_selection,
+    epsilon_lexicase_selection,
     informed_downsample_lexicase_selection,
+    lexicase_selection,
 )
 
 # Import NumPy implementations directly
 from lexicase.numpy_impl import (
-    numpy_lexicase_selection,
-    numpy_epsilon_lexicase_selection,
-    numpy_epsilon_lexicase_selection_with_mad,
     numpy_compute_mad_epsilon,
     numpy_downsample_lexicase_selection,
+    numpy_epsilon_lexicase_selection,
+    numpy_epsilon_lexicase_selection_with_mad,
     numpy_informed_downsample_lexicase_selection,
+    numpy_lexicase_selection,
 )
-
 
 # =============================================================================
 # Test Fixtures

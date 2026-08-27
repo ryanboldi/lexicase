@@ -6,7 +6,8 @@ Tests now use the automatic dispatch system - no backend switching needed.
 
 import numpy as np
 import pytest
-from lexicase import lexicase_selection, epsilon_lexicase_selection
+
+from lexicase import epsilon_lexicase_selection, lexicase_selection
 
 
 def _to_set(arr):
@@ -18,10 +19,10 @@ def test_basic_selection():
     """Test basic lexicase selection functionality."""
     fitnesses = np.array([
         [1.0, 0.0, 1.0],  # Individual 0: good at cases 0,2
-        [0.0, 1.0, 0.0],  # Individual 1: good at case 1  
+        [0.0, 1.0, 0.0],  # Individual 1: good at case 1
         [0.5, 0.5, 0.5],  # Individual 2: mediocre at all
     ])
-    
+
     selected = lexicase_selection(fitnesses, num_selected=1, seed=42)
     assert len(selected) == 1
     assert selected[0] in [0, 1, 2]
@@ -34,10 +35,10 @@ def test_deterministic_with_seed():
         [0.0, 1.0, 0.0],
         [0.5, 0.5, 0.5],
     ])
-    
+
     selected1 = lexicase_selection(fitnesses, num_selected=2, seed=42)
     selected2 = lexicase_selection(fitnesses, num_selected=2, seed=42)
-    
+
     np.testing.assert_array_equal(selected1, selected2)
 
 
@@ -48,9 +49,9 @@ def test_basic_lexicase_behavior():
         [1.0, 0.0, 0.0],  # Individual 1: specialist
         [3.0, 3.0, 3.0],  # Individual 2: clearly best overall
     ])
-    
+
     selected = lexicase_selection(fitnesses, num_selected=3, seed=42)
-    
+
     # All selections should be valid
     assert len(selected) == 3
     assert all(0 <= idx < 3 for idx in selected)
@@ -63,7 +64,7 @@ def test_select_population_size():
         [0.0, 1.0],
         [0.5, 0.5],
     ])
-    
+
     # Test selecting specific numbers
     selected = lexicase_selection(fitnesses, num_selected=3, seed=42)
     assert len(selected) == 3
@@ -75,7 +76,7 @@ def test_empty_selection():
         [1.0, 0.0],
         [0.0, 1.0],
     ])
-    
+
     selected = lexicase_selection(fitnesses, num_selected=0)
     assert len(selected) == 0
 
@@ -83,7 +84,7 @@ def test_empty_selection():
 def test_single_individual():
     """Test with single individual population."""
     fitnesses = np.array([[1.0, 0.5, 0.0]])
-    
+
     selected = lexicase_selection(fitnesses, num_selected=1, seed=42)
     assert len(selected) == 1
     assert selected[0] == 0
@@ -96,7 +97,7 @@ def test_single_case():
         [0.5],
         [0.0],
     ])
-    
+
     selected = lexicase_selection(fitnesses, num_selected=1, seed=42)
     assert len(selected) == 1
     assert selected[0] == 0  # Best individual should be selected
@@ -109,10 +110,10 @@ def test_epsilon_lexicase_selection():
         [0.9, 0.1, 0.9],  # Slightly worse but within epsilon
         [0.0, 1.0, 0.0],
     ])
-    
+
     # Test epsilon lexicase with small epsilon
     selected_epsilon = epsilon_lexicase_selection(fitnesses, num_selected=10, epsilon=0.2, seed=42)
-    
+
     # Selection should be valid (contain valid indices)
     assert len(selected_epsilon) == 10
     assert all(0 <= idx < 3 for idx in selected_epsilon)
@@ -121,11 +122,11 @@ def test_epsilon_lexicase_selection():
 def test_invalid_inputs():
     """Test error handling for invalid inputs."""
     fitnesses = np.array([[1.0, 0.0], [0.0, 1.0]])
-    
+
     # Test invalid num_selected
     with pytest.raises(ValueError):
         lexicase_selection(fitnesses, num_selected=-1)
-    
+
     # Test invalid seed type
     with pytest.raises(ValueError):
         lexicase_selection(fitnesses, num_selected=1, seed="invalid")
@@ -136,12 +137,12 @@ def test_stress_large_population():
     np.random.seed(42)
     n_individuals = 50
     n_cases = 20
-    
+
     # Create diverse fitness landscape
     fitnesses = np.random.rand(n_individuals, n_cases)
-    
+
     selected = lexicase_selection(fitnesses, num_selected=10, seed=42)
-    
+
     assert len(selected) == 10
     assert all(0 <= idx < n_individuals for idx in selected)
 
@@ -154,9 +155,9 @@ def test_tie_breaking():
         [1.0, 1.0, 1.0],
         [1.0, 1.0, 1.0],
     ])
-    
+
     selected = lexicase_selection(fitnesses, num_selected=10, seed=42)
-    
+
     # All selections should be valid
     assert len(selected) == 10
     assert all(0 <= idx < 3 for idx in selected)
@@ -167,17 +168,17 @@ def test_specialist_selection():
     # Create specialists for different cases
     fitnesses = np.array([
         [10.0, 0.0, 0.0],  # Specialist for case 0
-        [0.0, 10.0, 0.0],  # Specialist for case 1  
+        [0.0, 10.0, 0.0],  # Specialist for case 1
         [0.0, 0.0, 10.0],  # Specialist for case 2
         [3.0, 3.0, 3.0],   # Generalist (good overall)
     ])
-    
+
     # With sufficient selections, should see some diversity
     selected = lexicase_selection(fitnesses, num_selected=20, seed=42)
-    
+
     assert len(selected) == 20
     assert all(0 <= idx < 4 for idx in selected)
-    
+
     # Should select multiple different individuals
     unique_selections = _to_set(selected)
     assert len(unique_selections) >= 2  # Some diversity
@@ -190,13 +191,13 @@ def test_case_order_matters():
         [1, 10, 1],  # Individual 1: best on case 1
         [1, 1, 10]   # Individual 2: best on case 2
     ])
-    
+
     # With different seeds, we should see different selections due to case shuffling
     results = []
     for seed in range(10):
         selected = lexicase_selection(fitnesses, num_selected=1, seed=seed)
         results.append(int(selected[0]))
-    
+
     # Should see some variation in results
     unique_results = set(results)  # results is a list of individual indices, not arrays
     assert len(unique_results) >= 2  # At least some variation
@@ -211,13 +212,13 @@ def test_filtering_logic():
         [50, 50, 50],  # Individual 3: good on all cases
         [1, 1, 1]      # Individual 4: poor on all cases
     ])
-    
+
     # Run multiple selections to see behavior
     selected = lexicase_selection(fitnesses, num_selected=50, seed=42)
-    
+
     assert len(selected) == 50
     assert all(0 <= idx < 5 for idx in selected)
-    
+
     # Check that poor individual (4) is selected less frequently
     selection_counts = np.bincount(selected, minlength=5)
     assert selection_counts[4] < max(selection_counts)  # Worst should be selected less
@@ -228,30 +229,34 @@ def test_epsilon_vs_regular_comparison():
     fitnesses = np.array([
         [100, 1, 1],
         [99, 2, 2],    # Close to best on case 0
-        [1, 100, 1], 
+        [1, 100, 1],
         [2, 99, 2],    # Close to best on case 1
         [1, 1, 100],
         [2, 2, 99]     # Close to best on case 2
     ])
-    
+
     # Regular lexicase
     selected_regular = lexicase_selection(fitnesses, num_selected=20, seed=42)
-    
+
     # Epsilon lexicase with small epsilon
-    selected_epsilon_small = epsilon_lexicase_selection(fitnesses, num_selected=20, epsilon=0.5, seed=42)
-    
-    # Epsilon lexicase with large epsilon 
-    selected_epsilon_large = epsilon_lexicase_selection(fitnesses, num_selected=20, epsilon=5.0, seed=42)
-    
+    selected_epsilon_small = epsilon_lexicase_selection(
+        fitnesses, num_selected=20, epsilon=0.5, seed=42
+    )
+
+    # Epsilon lexicase with large epsilon
+    selected_epsilon_large = epsilon_lexicase_selection(
+        fitnesses, num_selected=20, epsilon=5.0, seed=42
+    )
+
     # All should produce valid results
     assert len(selected_regular) == 20
     assert len(selected_epsilon_small) == 20
     assert len(selected_epsilon_large) == 20
-    
+
     # Large epsilon should allow more diversity
     diversity_regular = len(_to_set(selected_regular))
     diversity_large_eps = len(_to_set(selected_epsilon_large))
-    
+
     # This is a soft check since stochasticity can affect results
     assert diversity_large_eps >= diversity_regular * 0.5  # At least half the diversity
 
@@ -261,16 +266,16 @@ def test_epsilon_behavior():
     fitnesses = np.array([
         [100, 1, 1],
         [98, 3, 3],    # Within epsilon=3 of best on case 0
-        [1, 100, 1], 
+        [1, 100, 1],
         [3, 98, 3],    # Within epsilon=3 of best on case 1
     ])
-    
+
     # Test with epsilon that should include close performers
     selected = epsilon_lexicase_selection(fitnesses, num_selected=20, epsilon=3.0, seed=42)
-    
+
     assert len(selected) == 20
     assert all(0 <= idx < 4 for idx in selected)
-    
+
     # Should see some diversity in selection
     unique_selected = _to_set(selected)
     assert len(unique_selected) >= 2
@@ -279,22 +284,22 @@ def test_epsilon_behavior():
 def test_multiple_cases_sufficient():
     """Test that multiple cases provide sufficient selection pressure."""
     np.random.seed(123)
-    
+
     # Create 20 individuals, 15 cases
     fitnesses = np.random.rand(20, 15) * 10
-    
+
     # Make some individuals clearly better on specific cases
     fitnesses[0, :5] += 20   # Individual 0 dominates first 5 cases
     fitnesses[1, 5:10] += 20 # Individual 1 dominates next 5 cases
     fitnesses[2, 10:] += 20  # Individual 2 dominates last 5 cases
-    
+
     selected = lexicase_selection(fitnesses, num_selected=40, seed=42)
-    
+
     assert len(selected) == 40
     assert all(0 <= idx < 20 for idx in selected)
-    
+
     # The dominant individuals should be selected frequently
     selection_counts = np.bincount(selected, minlength=20)
-    
+
     # At least one of the dominant individuals should be selected
-    assert max(selection_counts[0], selection_counts[1], selection_counts[2]) > 0 
+    assert max(selection_counts[0], selection_counts[1], selection_counts[2]) > 0

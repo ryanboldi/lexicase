@@ -1,8 +1,12 @@
 """
-Lexicase selection library for evolutionary computation.
+Lexicase selection for evolutionary computation.
 
-This library provides fast, vectorized implementations of lexicase selection
-and its variants using NumPy.
+Fast, vectorized implementations of lexicase selection and its variants, with
+a NumPy backend and an optional JAX backend.
+
+Importing this package never imports jax. Backend choice follows the input
+array type, and can be forced with the backend= argument on every selection
+function.
 
 Usage:
     import numpy as np
@@ -12,17 +16,30 @@ Usage:
     selected = lexicase_selection(fitness, num_selected=50, seed=42)
 """
 
+from .backends import is_jax_array, jax_is_available
 from .dispatch import (
-    lexicase_selection,
-    epsilon_lexicase_selection,
+    batch_lexicase_selection,
+    cohort_lexicase_selection,
+    dalex_selection,
     downsample_lexicase_selection,
-    informed_downsample_lexicase_selection
+    epsilon_lexicase_selection,
+    informed_downsample_lexicase_selection,
+    lexicase_selection,
+    plexicase_probabilities,
+    plexicase_selection,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 __all__ = [
     "lexicase_selection",
     "epsilon_lexicase_selection",
     "downsample_lexicase_selection",
     "informed_downsample_lexicase_selection",
+    "batch_lexicase_selection",
+    "cohort_lexicase_selection",
+    "plexicase_selection",
+    "plexicase_probabilities",
+    "dalex_selection",
+    "is_jax_array",
+    "jax_is_available",
 ]
