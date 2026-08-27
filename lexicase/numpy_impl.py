@@ -330,18 +330,11 @@ def numpy_downsample_lexicase_selection(
 
     # Perform selection for remaining slots
     while selection_idx < num_selected:
-        # Randomly sample test cases for this selection
         sampled_cases = rng.choice(n_cases, size=actual_downsample_size, replace=False)
-
-        # Create submatrix with only sampled cases
-        submatrix = fitness_matrix[:, sampled_cases]
-
-        # Shuffle case order for the submatrix
         case_order = rng.permutation(actual_downsample_size)
 
-        # Perform lexicase selection on the submatrix
         selected[selection_idx] = _lexicase_select_one(
-            submatrix, case_order, rng, epsilon=None
+            fitness_matrix, sampled_cases[case_order], rng, epsilon=None
         )
         selection_idx += 1
 
